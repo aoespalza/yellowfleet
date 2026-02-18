@@ -1,0 +1,5 @@
+export enum WorkOrderType {
+  PREVENTIVE = 'PREVENTIVE',
+  CORRECTIVE = 'CORRECTIVE',
+  PREDICTIVE = 'PREDICTIVE',
+}

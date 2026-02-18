@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MachineStatus {
+  AVAILABLE
+  IN_CONTRACT
+  IN_WORKSHOP
+  IN_TRANSFER
+  INACTIVE
+}
+
+enum WorkOrderType {
+  PREVENTIVE
+  CORRECTIVE
+  PREDICTIVE
+}
+
+enum WorkOrderStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_PARTS
+  COMPLETED
+  CANCELLED
+}
+
+enum ContractStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model Machine {
+  id               String        @id @default(uuid())
+  code             String        @unique
+  type             String
+  brand            String
+  model            String
+
+  year             Int?
+  serialNumber     String?
+  hourMeter        Float?
+  acquisitionDate  DateTime?
+  acquisitionValue Float?
+  usefulLifeHours  Float?
+  currentLocation  String?
+
+  status           MachineStatus
+
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  workOrders       WorkOrder[]
+  assignments      MachineAssignment[]
+}
+
+
+model WorkOrder {
+  id              String          @id @default(uuid())
+  machineId       String
+  type            WorkOrderType
+  status          WorkOrderStatus
+  entryDate       DateTime
+  exitDate        DateTime?
+  sparePartsCost  Float
+  laborCost       Float
+  totalCost       Float
+  downtimeHours  Float?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  machine         Machine         @relation(fields: [machineId], references: [id])
+}
+
+model Contract {
+  id          String         @id @default(uuid())
+  code        String
+  customer    String
+  startDate   DateTime
+  endDate     DateTime
+  value       Float
+  status      ContractStatus
+  description String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  assignments MachineAssignment[]
+}
+
+model MachineAssignment {
+  id              String   @id @default(uuid())
+  contractId      String
+  machineId       String
+  hourlyRate      Float
+  workedHours     Float
+  maintenanceCost Float
+  generatedIncome Float
+  margin          Float
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  contract        Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  machine         Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
+
+  @@unique([machineId, contractId])
+}
