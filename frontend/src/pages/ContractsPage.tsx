@@ -4,6 +4,7 @@ import type { Contract, ContractFormData } from '../types/contract';
 import { ContractForm } from '../components/ContractForm';
 import { ContractsTable } from '../components/ContractsTable';
 import { AssignMachineModal } from '../components/AssignMachineModal';
+import { useAuth } from '../context/AuthContext';
 import './ContractsPage.css';
 
 const initialFormData: ContractFormData = {
@@ -17,6 +18,7 @@ const initialFormData: ContractFormData = {
 };
 
 export function ContractsPage() {
+  const { user } = useAuth();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -107,18 +109,20 @@ export function ContractsPage() {
     <div className="contracts-page">
       <div className="page-header">
         <h1>Gestión de Contratos</h1>
-        <button
-          className="btn-primary"
-          onClick={() => {
-            if (showForm && editingContractId) {
-              resetForm();
-            } else {
-              setShowForm(!showForm);
-            }
-          }}
-        >
-          {showForm ? 'Cancelar' : '+ Nuevo Contrato'}
-        </button>
+        {user?.role !== 'OPERATOR' && (
+          <button
+            className="btn-primary"
+            onClick={() => {
+              if (showForm && editingContractId) {
+                resetForm();
+              } else {
+                setShowForm(!showForm);
+              }
+            }}
+          >
+            {showForm ? 'Cancelar' : '+ Nuevo Contrato'}
+          </button>
+        )}
       </div>
 
       {showForm && (

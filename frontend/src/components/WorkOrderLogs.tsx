@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { workOrderApi } from '../api/workOrderApi';
+import { useAuth } from '../context/AuthContext';
+import './WorkOrderLogs.css';
 
 interface WorkOrderLog {
   id: string;
@@ -14,10 +16,11 @@ interface WorkOrderLogsProps {
   onClose: () => void;
 }
 
-export function WorkOrderLogs({ workOrderId, onClose }: WorkOrderLogsProps) {
+export function WorkOrderLogs({ workOrderId }: WorkOrderLogsProps) {
   const [logs, setLogs] = useState<WorkOrderLog[]>([]);
   const [newLog, setNewLog] = useState('');
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchLogs();
@@ -48,6 +51,7 @@ export function WorkOrderLogs({ workOrderId, onClose }: WorkOrderLogsProps) {
   };
 
   const handleDeleteLog = async (logId: string) => {
+    if (!window.confirm('¿Eliminar este registro?')) return;
     try {
       await workOrderApi.deleteLog(logId);
       fetchLogs();
@@ -67,44 +71,50 @@ export function WorkOrderLogs({ workOrderId, onClose }: WorkOrderLogsProps) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Bitácora de Orden de Trabajo</h2>
-          <button className="btn-close-modal" onClick={onClose}>✕</button>
-        </div>
+    <div className="logs-card">
+      <div className="logs-card-header">
+        <h3>📋 Bitácora de Trabajo</h3>
+        <span className="logs-count">{logs.length} registros</span>
+      </div>
 
+      {user?.role !== 'OPERATOR' && (
         <form onSubmit={handleAddLog} className="log-form">
           <textarea
-            placeholder="Registrar progreso del día..."
+            placeholder="Registrar progreso, observaciones, actividades realizadas..."
             value={newLog}
             onChange={(e) => setNewLog(e.target.value)}
-            rows={3}
+            rows={2}
           />
-          <button type="submit" className="btn-submit">Agregar Registro</button>
+          <button type="submit" className="btn-submit-log">
+            + Agregar Registro
+          </button>
         </form>
+      )}
 
-        <div className="logs-list">
-          {loading ? (
-            <div className="loading">Cargando...</div>
-          ) : logs.length === 0 ? (
-            <div className="empty-logs">No hay registros aún</div>
-          ) : (
-            logs.map((log) => (
-              <div key={log.id} className="log-item">
-                <div className="log-date">{formatDate(log.date)}</div>
-                <div className="log-description">{log.description}</div>
-                <button
-                  className="btn-delete-log"
-                  onClick={() => handleDeleteLog(log.id)}
-                  title="Eliminar"
-                >
-                  🗑️
-                </button>
+      <div className="logs-list">
+        {loading ? (
+          <div className="loading">Cargando...</div>
+        ) : logs.length === 0 ? (
+          <div className="empty-logs">No hay registros aún. Agrega el primero.</div>
+        ) : (
+          logs.map((log) => (
+            <div key={log.id} className="log-item">
+              <div className="log-header">
+                <span className="log-date">{formatDate(log.date)}</span>
+                {user?.role !== 'OPERATOR' && (
+                  <button
+                    className="btn-delete-log"
+                    onClick={() => handleDeleteLog(log.id)}
+                    title="Eliminar"
+                  >
+                    🗑️
+                  </button>
+                )}
               </div>
-            ))
-          )}
-        </div>
+              <div className="log-description">{log.description}</div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

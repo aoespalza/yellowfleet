@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { machineApi } from '../api/machineApi';
 import type { Machine, MachineFormData } from '../types/machine';
 import { StatusBadge } from '../components/StatusBadge';
+import { useAuth } from '../context/AuthContext';
 import './FleetPage.css';
 
 const initialFormData: MachineFormData = {
@@ -20,6 +21,7 @@ const initialFormData: MachineFormData = {
 };
 
 export function FleetPage() {
+  const { user } = useAuth();
   const [machines, setMachines] = useState<Machine[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -107,18 +109,20 @@ export function FleetPage() {
     <div className="fleet-page">
       <div className="fleet-header">
         <h1>Gestión de Flota</h1>
-        <button 
-          className="btn-primary"
-          onClick={() => {
-            if (showForm && editingMachineId) {
-              resetForm();
-            } else {
-              setShowForm(!showForm);
-            }
-          }}
-        >
-          {showForm ? 'Cancelar' : '+ Nueva Máquina'}
-        </button>
+        {user?.role !== 'OPERATOR' && (
+          <button 
+            className="btn-primary"
+            onClick={() => {
+              if (showForm && editingMachineId) {
+                resetForm();
+              } else {
+                setShowForm(!showForm);
+              }
+            }}
+          >
+            {showForm ? 'Cancelar' : '+ Nueva Máquina'}
+          </button>
+        )}
       </div>
 
       {showForm && (
@@ -312,20 +316,24 @@ export function FleetPage() {
                       >
                         📋
                       </Link>
-                      <button
-                        className="btn-edit"
-                        onClick={() => handleEdit(machine)}
-                        title="Editar"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        className="btn-delete"
-                        onClick={() => handleDelete(machine.id)}
-                        title="Eliminar"
-                      >
-                        🗑️
-                      </button>
+                      {user?.role !== 'OPERATOR' && (
+                        <>
+                          <button
+                            className="btn-edit"
+                            onClick={() => handleEdit(machine)}
+                            title="Editar"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            className="btn-delete"
+                            onClick={() => handleDelete(machine.id)}
+                            title="Eliminar"
+                          >
+                            🗑️
+                          </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>
