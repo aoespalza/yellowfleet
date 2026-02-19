@@ -4,6 +4,7 @@ import { MachineStatus } from '../../domain/fleet/MachineStatus';
 import prisma from '../prisma/prismaClient';
 
 export class PrismaMachineRepository implements IMachineRepository {
+  
   async save(machine: Machine): Promise<void> {
     await prisma.machine.upsert({
       where: { id: machine.id },
@@ -41,8 +42,6 @@ export class PrismaMachineRepository implements IMachineRepository {
       },
     });
   }
-  
-  
 
   async findById(id: string): Promise<Machine | null> {
     const prismaMachine = await prisma.machine.findUnique({
@@ -53,52 +52,49 @@ export class PrismaMachineRepository implements IMachineRepository {
       return null;
     }
 
-    return Machine.create({
-      id: prismaMachine.id,
-      code: prismaMachine.code,
-      type: prismaMachine.type,
-      brand: prismaMachine.brand,
-      model: prismaMachine.model,
-      year: prismaMachine.year,
-      serialNumber: prismaMachine.serialNumber,
-      hourMeter: prismaMachine.hourMeter,
-      acquisitionDate: prismaMachine.acquisitionDate,
-      acquisitionValue: prismaMachine.acquisitionValue,
-      usefulLifeHours: prismaMachine.usefulLifeHours,
-      status: this.mapPrismaStatusToDomain(prismaMachine.status),
-      currentLocation: prismaMachine.currentLocation,
-      createdAt: prismaMachine.createdAt,
-      updatedAt: prismaMachine.updatedAt,
-    });
+    return this.toDomain(prismaMachine);
   }
 
   async findAll(): Promise<Machine[]> {
     const prismaMachines = await prisma.machine.findMany();
 
     return prismaMachines.map((prismaMachine) =>
-      Machine.create({
-        id: prismaMachine.id,
-        code: prismaMachine.code,
-        type: prismaMachine.type,
-        brand: prismaMachine.brand,
-        model: prismaMachine.model,
-        year: prismaMachine.year,
-        serialNumber: prismaMachine.serialNumber,
-        hourMeter: prismaMachine.hourMeter,
-        acquisitionDate: prismaMachine.acquisitionDate,
-        acquisitionValue: prismaMachine.acquisitionValue,
-        usefulLifeHours: prismaMachine.usefulLifeHours,
-        status: this.mapPrismaStatusToDomain(prismaMachine.status),
-        currentLocation: prismaMachine.currentLocation,
-        createdAt: prismaMachine.createdAt,
-        updatedAt: prismaMachine.updatedAt,
-      })
+      this.toDomain(prismaMachine)
     );
+  }
+
+  async delete(id: string): Promise<void> {
+    await prisma.machine.delete({
+      where: { id },
+    });
+  }
+
+  // 🔥 Mapper centralizado (PRO)
+  private toDomain(prismaMachine: any): Machine {
+    return Machine.restore({
+      id: prismaMachine.id,
+      code: prismaMachine.code,
+      type: prismaMachine.type ?? '',
+      brand: prismaMachine.brand ?? '',
+      model: prismaMachine.model ?? '',
+      year: prismaMachine.year ?? new Date().getFullYear(),
+      serialNumber: prismaMachine.serialNumber ?? '',
+      hourMeter: prismaMachine.hourMeter ?? 0,
+      acquisitionDate: prismaMachine.acquisitionDate ?? new Date(),
+      acquisitionValue: prismaMachine.acquisitionValue ?? 0,
+      usefulLifeHours: prismaMachine.usefulLifeHours ?? 0,
+      status: this.mapPrismaStatusToDomain(prismaMachine.status),
+      currentLocation: prismaMachine.currentLocation ?? '',
+      createdAt: prismaMachine.createdAt,
+      updatedAt: prismaMachine.updatedAt,
+    });
   }
 
   private mapPrismaStatusToDomain(
     prismaStatus: import('@prisma/client').MachineStatus
   ): MachineStatus {
-    return MachineStatus[prismaStatus as keyof typeof MachineStatus];
+    return MachineStatus[
+      prismaStatus as keyof typeof MachineStatus
+    ];
   }
 }

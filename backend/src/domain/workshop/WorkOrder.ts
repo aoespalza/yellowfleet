@@ -12,9 +12,14 @@ export class WorkOrder {
   public static create(props: WorkOrderProps): WorkOrder {
     return new WorkOrder({
       ...props,
+      id: crypto.randomUUID(),
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+  }
+
+  public static restore(props: WorkOrderProps): WorkOrder {
+    return new WorkOrder(props);
   }
 
   public calculateTotalCost(): number {

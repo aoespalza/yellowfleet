@@ -1,5 +1,22 @@
-import { MachineProps } from './MachineProps';
 import { MachineStatus } from './MachineStatus';
+
+export interface MachineProps {
+  id: string;
+  code: string;
+  type: string;
+  brand: string;
+  model: string;
+  year: number;
+  serialNumber: string;
+  hourMeter: number;
+  acquisitionDate: Date;
+  acquisitionValue: number;
+  usefulLifeHours: number;
+  status: MachineStatus;
+  currentLocation: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export class Machine {
   private props: MachineProps;
@@ -8,108 +25,93 @@ export class Machine {
     this.props = props;
   }
 
-  public static create(props: MachineProps): Machine {
+  // 🔥 CREATE (para nuevas máquinas)
+  static create(
+    props: Omit<MachineProps, 'id' | 'createdAt' | 'updatedAt'>
+  ): Machine {
     return new Machine({
       ...props,
+      id: crypto.randomUUID(),
       createdAt: new Date(),
       updatedAt: new Date(),
     });
   }
 
-  public updateHourMeter(hours: number): void {
-    if (hours < this.props.hourMeter) {
-      throw new Error('Hour meter cannot be less than current value');
-    }
-    this.props.hourMeter = hours;
-    this.props.updatedAt = new Date();
+  // 🔥 RESTORE (para cuando viene de DB)
+  static restore(props: MachineProps): Machine {
+    return new Machine(props);
   }
 
-  public assignToContract(): void {
-    if (this.props.status === MachineStatus.IN_WORKSHOP) {
-      throw new Error('Cannot assign machine to contract while in workshop');
-    }
-    this.props.status = MachineStatus.IN_CONTRACT;
-    this.props.updatedAt = new Date();
+  // 🔥 MÉTODO QUE TE FALTA
+  updateDetails(
+    updates: Omit<MachineProps, 'id' | 'status' | 'createdAt' | 'updatedAt'>
+  ): void {
+    this.props = {
+      ...this.props,
+      ...updates,
+      updatedAt: new Date(),
+    };
   }
 
-  public sendToWorkshop(): void {
-    if (this.props.status === MachineStatus.IN_CONTRACT) {
-      throw new Error('Cannot send machine to workshop while in contract');
-    }
-    this.props.status = MachineStatus.IN_WORKSHOP;
-    this.props.updatedAt = new Date();
-  }
+  // ===== GETTERS =====
 
-  public markAvailable(): void {
-    this.props.status = MachineStatus.AVAILABLE;
-    this.props.updatedAt = new Date();
-  }
-
-  public changeLocation(location: string): void {
-    if (this.props.status === MachineStatus.INACTIVE) {
-      throw new Error('Cannot change location of inactive machine');
-    }
-    this.props.currentLocation = location;
-    this.props.updatedAt = new Date();
-  }
-
-  public get id(): string | undefined {
+  get id() {
     return this.props.id;
   }
 
-  public get code(): string {
+  get code() {
     return this.props.code;
   }
 
-  public get type(): string {
+  get type() {
     return this.props.type;
   }
 
-  public get brand(): string {
+  get brand() {
     return this.props.brand;
   }
 
-  public get model(): string {
+  get model() {
     return this.props.model;
   }
 
-  public get year(): number {
+  get year() {
     return this.props.year;
   }
 
-  public get serialNumber(): string {
+  get serialNumber() {
     return this.props.serialNumber;
   }
 
-  public get hourMeter(): number {
+  get hourMeter() {
     return this.props.hourMeter;
   }
 
-  public get acquisitionDate(): Date {
+  get acquisitionDate() {
     return this.props.acquisitionDate;
   }
 
-  public get acquisitionValue(): number {
+  get acquisitionValue() {
     return this.props.acquisitionValue;
   }
 
-  public get usefulLifeHours(): number {
+  get usefulLifeHours() {
     return this.props.usefulLifeHours;
   }
 
-  public get status(): MachineStatus {
+  get status() {
     return this.props.status;
   }
 
-  public get currentLocation(): string {
+  get currentLocation() {
     return this.props.currentLocation;
   }
 
-  public get createdAt(): Date | undefined {
+  get createdAt() {
     return this.props.createdAt;
   }
 
-  public get updatedAt(): Date | undefined {
+  get updatedAt() {
     return this.props.updatedAt;
   }
 }

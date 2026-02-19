@@ -15,8 +15,10 @@ const workshopController = new WorkshopController();
 
 const router = Router();
 
-router.post('/work-orders', (req, res) => workshopController.create(req, res));
-router.patch('/work-orders/:id/close', (req, res) => workshopController.close(req, res));
-router.get('/work-orders/machine/:machineId', (req, res) => workshopController.listByMachine(req, res));
+router.get('/', (req, res) => workshopController.list(req, res));
+router.post('/', (req, res) => workshopController.create(req, res));
+router.patch('/:id/close', (req, res) => workshopController.close(req, res));
+router.put('/:id', (req, res) => workshopController.update(req, res));
+router.delete('/:id', (req, res) => workshopController.delete(req, res));
 
 export default router;

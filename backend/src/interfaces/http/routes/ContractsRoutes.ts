@@ -15,8 +15,10 @@ const contractsController = new ContractsController();
 
 const router = Router();
 
-router.post('/contracts', (req, res) => contractsController.create(req, res));
-router.post('/contracts/:id/assign', (req, res) => contractsController.assignMachine(req, res));
-router.patch('/contracts/:id/close', (req, res) => contractsController.close(req, res));
+router.get('/', (req, res) => contractsController.list(req, res));
+router.post('/', (req, res) => contractsController.create(req, res));
+router.post('/:id/assign', (req, res) => contractsController.assignMachine(req, res));
+router.patch('/:id/close', (req, res) => contractsController.close(req, res));
+router.delete('/:id', (req, res) => contractsController.delete(req, res));
 
 export default router;

@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { CreateContract } from '../../../application/contracts/CreateContract';
 import { AssignMachineToContract } from '../../../application/contracts/AssignMachineToContract';
 import { CloseContract } from '../../../application/contracts/CloseContract';
+import { ListContracts } from '../../../application/contracts/ListContracts';
 import { PrismaContractRepository } from '../../../infrastructure/repositories/PrismaContractRepository';
 
 const contractRepository = new PrismaContractRepository();
@@ -31,6 +32,16 @@ export class ContractsController {
       } else {
         res.status(400).json({ error: message });
       }
+    }
+  }
+  public async list(req: Request, res: Response): Promise<void> {
+    try {
+      const listContracts = new ListContracts(contractRepository);
+      const contracts = await listContracts.execute();
+      res.status(200).json(contracts);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      res.status(400).json({ error: message });
     }
   }
 

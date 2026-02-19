@@ -1,0 +1,23 @@
+.workorder-status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.workorder-status-open {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.workorder-status-progress {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.workorder-status-closed {
+  background-color: #d1fae5;
+  color: #065f46;
+}

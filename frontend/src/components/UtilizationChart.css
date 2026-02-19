@@ -1,0 +1,58 @@
+.utilization-chart {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.utilization-chart__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.utilization-chart__label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.utilization-chart__value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.utilization-chart__bar-container {
+  height: 12px;
+  background: #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.utilization-chart__bar {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.5s ease;
+}
+
+.utilization-chart--high .utilization-chart__bar {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.utilization-chart--medium .utilization-chart__bar {
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+.utilization-chart--low .utilization-chart__bar {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.utilization-chart__footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #9ca3af;
+}

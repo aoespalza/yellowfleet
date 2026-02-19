@@ -4,23 +4,26 @@ import type { Machine, MachineFormData } from '../types/machine';
 import { StatusBadge } from '../components/StatusBadge';
 import './FleetPage.css';
 
+const initialFormData: MachineFormData = {
+  code: '',
+  type: '',
+  brand: '',
+  model: '',
+  year: new Date().getFullYear(),
+  serialNumber: '',
+  hourMeter: 0,
+  acquisitionDate: new Date().toISOString().split('T')[0],
+  acquisitionValue: 0,
+  usefulLifeHours: 10000,
+  currentLocation: '',
+};
+
 export function FleetPage() {
   const [machines, setMachines] = useState<Machine[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState<MachineFormData>({
-    code: '',
-    type: '',
-    brand: '',
-    model: '',
-    year: new Date().getFullYear(),
-    serialNumber: '',
-    hourMeter: 0,
-    acquisitionDate: new Date().toISOString().split('T')[0],
-    acquisitionValue: 0,
-    usefulLifeHours: 10000,
-    currentLocation: '',
-  });
+  const [editingMachineId, setEditingMachineId] = useState<string | null>(null);
+  const [formData, setFormData] = useState<MachineFormData>(initialFormData);
 
   const fetchMachines = async () => {
     try {
@@ -51,25 +54,52 @@ export function FleetPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await machineApi.create(formData);
-      setFormData({
-        code: '',
-        type: '',
-        brand: '',
-        model: '',
-        year: new Date().getFullYear(),
-        serialNumber: '',
-        hourMeter: 0,
-        acquisitionDate: new Date().toISOString().split('T')[0],
-        acquisitionValue: 0,
-        usefulLifeHours: 10000,
-        currentLocation: '',
-      });
-      setShowForm(false);
+      if (editingMachineId) {
+        await machineApi.update(editingMachineId, formData);
+      } else {
+        await machineApi.create(formData);
+      }
+      resetForm();
       fetchMachines();
     } catch (error) {
-      console.error('Error creating machine:', error);
+      console.error('Error saving machine:', error);
     }
+  };
+
+  const handleEdit = (machine: Machine) => {
+    setFormData({
+      code: machine.code,
+      type: machine.type,
+      brand: machine.brand,
+      model: machine.model,
+      year: machine.year,
+      serialNumber: machine.serialNumber,
+      hourMeter: machine.hourMeter,
+      acquisitionDate: new Date(machine.acquisitionDate).toISOString().split('T')[0],
+      acquisitionValue: machine.acquisitionValue,
+      usefulLifeHours: machine.usefulLifeHours,
+      currentLocation: machine.currentLocation,
+    });
+    setEditingMachineId(machine.id);
+    setShowForm(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('¿Está seguro de que desea eliminar esta máquina?')) {
+      return;
+    }
+    try {
+      await machineApi.delete(id);
+      fetchMachines();
+    } catch (error) {
+      console.error('Error deleting machine:', error);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData(initialFormData);
+    setEditingMachineId(null);
+    setShowForm(false);
   };
 
   return (
@@ -78,7 +108,13 @@ export function FleetPage() {
         <h1>Gestión de Flota</h1>
         <button 
           className="btn-primary"
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            if (showForm && editingMachineId) {
+              resetForm();
+            } else {
+              setShowForm(!showForm);
+            }
+          }}
         >
           {showForm ? 'Cancelar' : '+ Nueva Máquina'}
         </button>
@@ -86,7 +122,7 @@ export function FleetPage() {
 
       {showForm && (
         <div className="form-container">
-          <h2>Nueva Máquina</h2>
+          <h2>{editingMachineId ? 'Editar Máquina' : 'Nueva Máquina'}</h2>
           <form onSubmit={handleSubmit} className="machine-form">
             <div className="form-row">
               <div className="form-group">
@@ -218,7 +254,9 @@ export function FleetPage() {
                 />
               </div>
             </div>
-            <button type="submit" className="btn-submit">Crear Máquina</button>
+            <button type="submit" className="btn-submit">
+              {editingMachineId ? 'Actualizar Máquina' : 'Crear Máquina'}
+            </button>
           </form>
         </div>
       )}
@@ -240,25 +278,43 @@ export function FleetPage() {
                 <th>Horas</th>
                 <th>Ubicación</th>
                 <th>Estado</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {machines.map((machine) => (
-                <tr key={`${machine.id}-${machine.code}`}>
-
+                <tr key={machine.id}>
                   <td>{machine.code}</td>
                   <td>{machine.type}</td>
                   <td>{machine.brand}</td>
                   <td>{machine.model}</td>
                   <td>{machine.year}</td>
                   <td>
-  {machine.hourMeter != null
-    ? Number(machine.hourMeter).toFixed(2)
-    : '—'}
-</td>
+                    {machine.hourMeter != null
+                      ? Number(machine.hourMeter).toFixed(2)
+                      : '—'}
+                  </td>
                   <td>{machine.currentLocation}</td>
                   <td>
                     <StatusBadge status={machine.status} />
+                  </td>
+                  <td>
+                    <div className="action-buttons">
+                      <button
+                        className="btn-edit"
+                        onClick={() => handleEdit(machine)}
+                        title="Editar"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        className="btn-delete"
+                        onClick={() => handleDelete(machine.id)}
+                        title="Eliminar"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -269,5 +325,5 @@ export function FleetPage() {
     </div>
   );
 }
-export default FleetPage;
 
+export default FleetPage;

@@ -5,6 +5,7 @@ import { WorkOrderStatus } from '../../domain/workshop/WorkOrderStatus';
 import prisma from '../prisma/prismaClient';
 
 export class PrismaWorkOrderRepository implements IWorkOrderRepository {
+
   async save(workOrder: WorkOrder): Promise<void> {
     await prisma.workOrder.upsert({
       where: { id: workOrder.id },
@@ -32,7 +33,7 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
         laborCost: workOrder.laborCost,
         totalCost: workOrder.totalCost,
         downtimeHours: workOrder.downtimeHours,
-        updatedAt: workOrder.updatedAt,
+        updatedAt: new Date(),
       },
     });
   }
@@ -42,11 +43,37 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
       where: { id },
     });
 
-    if (!prismaWorkOrder) {
-      return null;
-    }
+    if (!prismaWorkOrder) return null;
 
-    return WorkOrder.create({
+    return this.toDomain(prismaWorkOrder);
+  }
+
+  async findByMachineId(machineId: string): Promise<WorkOrder[]> {
+    const prismaWorkOrders = await prisma.workOrder.findMany({
+      where: { machineId },
+    });
+
+    return prismaWorkOrders.map((wo) => this.toDomain(wo));
+  }
+
+  // ✅ ESTE MÉTODO TE FALTABA
+  async findAll(): Promise<WorkOrder[]> {
+    const prismaWorkOrders = await prisma.workOrder.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return prismaWorkOrders.map((wo) => this.toDomain(wo));
+  }
+
+  async delete(id: string): Promise<void> {
+    await prisma.workOrder.delete({
+      where: { id },
+    });
+  }
+
+  // 🔥 Método centralizado de mapeo
+  private toDomain(prismaWorkOrder: any): WorkOrder {
+    return WorkOrder.restore({
       id: prismaWorkOrder.id,
       machineId: prismaWorkOrder.machineId,
       type: this.mapPrismaTypeToDomain(prismaWorkOrder.type),
@@ -60,29 +87,6 @@ export class PrismaWorkOrderRepository implements IWorkOrderRepository {
       createdAt: prismaWorkOrder.createdAt,
       updatedAt: prismaWorkOrder.updatedAt,
     });
-  }
-
-  async findByMachineId(machineId: string): Promise<WorkOrder[]> {
-    const prismaWorkOrders = await prisma.workOrder.findMany({
-      where: { machineId },
-    });
-
-    return prismaWorkOrders.map((prismaWorkOrder) =>
-      WorkOrder.create({
-        id: prismaWorkOrder.id,
-        machineId: prismaWorkOrder.machineId,
-        type: this.mapPrismaTypeToDomain(prismaWorkOrder.type),
-        status: this.mapPrismaStatusToDomain(prismaWorkOrder.status),
-        entryDate: prismaWorkOrder.entryDate,
-        exitDate: prismaWorkOrder.exitDate,
-        sparePartsCost: prismaWorkOrder.sparePartsCost,
-        laborCost: prismaWorkOrder.laborCost,
-        totalCost: prismaWorkOrder.totalCost,
-        downtimeHours: prismaWorkOrder.downtimeHours,
-        createdAt: prismaWorkOrder.createdAt,
-        updatedAt: prismaWorkOrder.updatedAt,
-      })
-    );
   }
 
   private mapPrismaTypeToDomain(

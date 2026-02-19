@@ -5,6 +5,8 @@ import { GetMachineById } from '../../../application/fleet/GetMachineById';
 import { ListMachines } from '../../../application/fleet/ListMachines';
 import { PrismaMachineRepository } from '../../../infrastructure/repositories/PrismaMachineRepository';
 import { MachineStatus } from '../../../domain/fleet/MachineStatus';
+import { UpdateMachine } from '../../../application/fleet/UpdateMachine';
+
 
 const machineRepository = new PrismaMachineRepository();
 
@@ -79,6 +81,35 @@ export class FleetController {
       }));
   
       res.status(200).json(response);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      res.status(400).json({ error: message });
+    }
+  }
+
+  public async update(req: Request, res: Response): Promise<void> {
+    try {
+      const updateMachine = new UpdateMachine(machineRepository);
+  
+      await updateMachine.execute({
+        id: req.params.id,
+        ...req.body,
+        acquisitionDate: new Date(req.body.acquisitionDate),
+      });
+  
+      res.status(200).json({ message: 'Machine updated successfully' });
+    } catch (error) {
+      console.error('UPDATE ERROR FULL:', error);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      res.status(400).json({ error: message });
+    }
+  }
+  
+  
+  public async delete(req: Request, res: Response): Promise<void> {
+    try {
+      await machineRepository.delete(req.params.id);
+      res.status(200).json({ message: 'Machine deleted successfully' });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       res.status(400).json({ error: message });

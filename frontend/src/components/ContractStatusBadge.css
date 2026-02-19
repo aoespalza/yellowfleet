@@ -1,0 +1,28 @@
+.contract-status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.contract-status-draft {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+.contract-status-active {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.contract-status-completed {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.contract-status-cancelled {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
