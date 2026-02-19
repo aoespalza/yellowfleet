@@ -11,6 +11,7 @@ const initialFormData: MachineFormData = {
   type: '',
   brand: '',
   model: '',
+  imageUrl: '',
   year: new Date().getFullYear(),
   serialNumber: '',
   hourMeter: 0,
@@ -54,6 +55,20 @@ export function FleetPage() {
     }));
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData((prev) => ({
+          ...prev,
+          imageUrl: reader.result as string,
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -75,6 +90,7 @@ export function FleetPage() {
       type: machine.type,
       brand: machine.brand,
       model: machine.model,
+      imageUrl: machine.imageUrl || '',
       year: machine.year,
       serialNumber: machine.serialNumber,
       hourMeter: machine.hourMeter ?? 0,
@@ -175,6 +191,32 @@ export function FleetPage() {
                   required
                   placeholder="320"
                 />
+              </div>
+              <div className="form-group">
+                <label>Imagen de la Maquina</label>
+                <div className="image-upload">
+                  {formData.imageUrl && (
+                    <div className="image-preview">
+                      <img src={formData.imageUrl} alt="Preview" />
+                      <button 
+                        type="button" 
+                        className="btn-remove-image"
+                        onClick={() => setFormData(prev => ({ ...prev, imageUrl: '' }))}
+                      >
+                        x
+                      </button>
+                    </div>
+                  )}
+                  <label className="upload-btn">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      hidden
+                    />
+                    {formData.imageUrl ? 'Cambiar imagen' : 'Subir imagen'}
+                  </label>
+                </div>
               </div>
             </div>
             <div className="form-row">

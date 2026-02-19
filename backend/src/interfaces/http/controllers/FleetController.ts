@@ -104,7 +104,34 @@ export class FleetController {
       res.status(400).json({ error: message });
     }
   }
-  
+
+  public async updateHourMeter(req: Request, res: Response): Promise<void> {
+    try {
+      const { hourMeter } = req.body;
+      
+      if (hourMeter === undefined || typeof hourMeter !== 'number') {
+        res.status(400).json({ error: 'hourMeter es requerido y debe ser un número' });
+        return;
+      }
+
+      const machine = await machineRepository.findById(req.params.id);
+      if (!machine) {
+        res.status(404).json({ error: 'Máquina no encontrada' });
+        return;
+      }
+
+      await machineRepository.update(req.params.id, { hourMeter });
+
+      res.status(200).json({ 
+        message: 'Horómetro actualizado',
+        hourMeter: hourMeter 
+      });
+    } catch (error) {
+      console.error('Update hourMeter error:', error);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      res.status(400).json({ error: message });
+    }
+  }
   
   public async delete(req: Request, res: Response): Promise<void> {
     try {
@@ -196,6 +223,7 @@ export class FleetController {
         type: machine.type,
         brand: machine.brand,
         model: machine.model,
+        imageUrl: machine.imageUrl,
         year: machine.year,
         serialNumber: machine.serialNumber,
         hourMeter: machine.hourMeter,
@@ -256,6 +284,119 @@ export class FleetController {
       res.status(200).json(response);
     } catch (error) {
       console.error('Error fetching machine details:', error);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      res.status(400).json({ error: message });
+    }
+  }
+
+  public async getDetailsPublic(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const prisma = await import('@prisma/client');
+      const { PrismaClient } = prisma;
+      const client = new PrismaClient();
+
+      // Get machine data (only public fields)
+      const machine = await client.machine.findUnique({
+        where: { id },
+      });
+
+      if (!machine) {
+        res.status(404).json({ error: 'Machine not found' });
+        return;
+      }
+
+      // Get work orders (only basic info)
+      const workOrders = await client.workOrder.findMany({
+        where: { machineId: id },
+        orderBy: { entryDate: 'desc' },
+        select: {
+          id: true,
+          type: true,
+          status: true,
+          entryDate: true,
+          exitDate: true,
+          sparePartsCost: true,
+          laborCost: true,
+          totalCost: true,
+          downtimeHours: true,
+        },
+      });
+
+      // Get assignments with contract info
+      const assignments = await client.machineAssignment.findMany({
+        where: { machineId: id },
+        include: { contract: true },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      // Calculate stats
+      const totalWorkedHours = assignments.reduce((sum, a) => sum + a.workedHours, 0);
+      const totalIncome = assignments.reduce((sum, a) => sum + a.generatedIncome, 0);
+      const totalMaintenance = assignments.reduce((sum, a) => sum + a.maintenanceCost, 0);
+      const totalWorkshopVisits = workOrders.length;
+      const totalSparePartsCost = workOrders.reduce((sum, w) => sum + w.sparePartsCost, 0);
+      const totalLaborCost = workOrders.reduce((sum, w) => sum + w.laborCost, 0);
+      const totalDowntimeHours = workOrders.reduce((sum, w) => sum + (w.downtimeHours || 0), 0);
+
+      // Contracts summary
+      const contracts = assignments.map((a) => ({
+        contractId: a.contractId,
+        contractCode: a.contract.code,
+        customer: a.contract.customer,
+        startDate: a.contract.startDate,
+        endDate: a.contract.endDate,
+        status: a.contract.status,
+        workedHours: a.workedHours,
+        generatedIncome: a.generatedIncome,
+        maintenanceCost: a.maintenanceCost,
+        margin: a.margin,
+      }));
+
+      const response = {
+        id: machine.id,
+        code: machine.code,
+        type: machine.type,
+        brand: machine.brand,
+        model: machine.model,
+        imageUrl: machine.imageUrl,
+        year: machine.year,
+        serialNumber: machine.serialNumber,
+        hourMeter: machine.hourMeter,
+        usefulLifeHours: machine.usefulLifeHours,
+        acquisitionValue: machine.acquisitionValue,
+        status: machine.status,
+        currentLocation: machine.currentLocation,
+        
+        // Ultimo mantenimiento
+        lastMaintenance: workOrders.length > 0 ? {
+          date: workOrders[workOrders.length - 1].entryDate,
+          type: workOrders[workOrders.length - 1].type,
+          hourMeter: (machine.hourMeter || 0) - workOrders.reduce((sum, wo) => sum + (wo.downtimeHours || 0), 0),
+          cost: workOrders[workOrders.length - 1].totalCost,
+        } : null,
+        
+        contracts,
+        workOrders,
+        
+        profitability: {
+          totalWorkedHours,
+          totalIncome,
+          totalMaintenanceCost: totalMaintenance,
+          totalMargin: totalIncome - totalMaintenance,
+        },
+        
+        workshopSummary: {
+          totalVisits: totalWorkshopVisits,
+          totalSparePartsCost,
+          totalLaborCost,
+          totalDowntimeHours,
+        },
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      console.error('Error fetching public machine details:', error);
       const message = error instanceof Error ? error.message : 'Unknown error';
       res.status(400).json({ error: message });
     }

@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import FleetPage from './pages/FleetPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -12,7 +12,17 @@ import './App.css';
 
 function AppNavigator() {
   const { user, logout } = useAuth();
-  const [currentPage, setCurrentPage] = useState<string>('fleet');
+  const [currentPage, setCurrentPage] = useState<string>(() => {
+    return localStorage.getItem('YF_PAGE') || 'fleet';
+  });
+
+  // Limpiar el localStorage despues de leer
+  useEffect(() => {
+    const page = localStorage.getItem('YF_PAGE');
+    if (page) {
+      localStorage.removeItem('YF_PAGE');
+    }
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -95,6 +105,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function PublicRoute({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
+}
+
 function App() {
   return (
     <AuthProvider>
@@ -102,18 +116,18 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route
+            path="/fleet/:id/history"
+            element={
+              <PublicRoute>
+                <MachineHistoryPage />
+              </PublicRoute>
+            }
+          />
+          <Route
             path="/"
             element={
               <ProtectedRoute>
                 <AppNavigator />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/fleet/:id/history"
-            element={
-              <ProtectedRoute>
-                <MachineHistoryPage />
               </ProtectedRoute>
             }
           />

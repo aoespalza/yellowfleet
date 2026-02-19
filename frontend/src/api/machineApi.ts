@@ -7,6 +7,7 @@ export interface MachineDetails {
   type: string;
   brand: string;
   model: string;
+  imageUrl?: string;
   year: number;
   serialNumber: string;
   hourMeter: number;
@@ -17,6 +18,12 @@ export interface MachineDetails {
   currentLocation: string;
   createdAt: string;
   updatedAt: string;
+  lastMaintenance: {
+    date: string;
+    type: string;
+    hourMeter: number;
+    cost: number;
+  } | null;
   currentContract: {
     id: string;
     code: string;
@@ -90,5 +97,10 @@ export const machineApi = {
 
   delete: async (id: string): Promise<void> => {
     await api.delete(`/fleet/machines/${id}`);
+  },
+
+  updateHourMeter: async (id: string, hourMeter: number): Promise<{ hourMeter: number }> => {
+    const response = await api.patch(`/fleet/machines/${id}/hourmeter`, { hourMeter });
+    return response.data;
   },
 };

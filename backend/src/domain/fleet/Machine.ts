@@ -6,6 +6,7 @@ export interface MachineProps {
   type: string;
   brand: string;
   model: string;
+  imageUrl?: string;
   year: number;
   serialNumber: string;
   hourMeter: number;
@@ -77,6 +78,10 @@ export class Machine {
 
   get model() {
     return this.props.model;
+  }
+
+  get imageUrl() {
+    return this.props.imageUrl;
   }
 
   get year() {

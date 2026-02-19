@@ -14,6 +14,7 @@ export class PrismaMachineRepository implements IMachineRepository {
         type: machine.type,
         brand: machine.brand,
         model: machine.model,
+        imageUrl: machine.imageUrl,
         year: machine.year,
         serialNumber: machine.serialNumber,
         hourMeter: machine.hourMeter,
@@ -30,6 +31,7 @@ export class PrismaMachineRepository implements IMachineRepository {
         type: machine.type,
         brand: machine.brand,
         model: machine.model,
+        imageUrl: machine.imageUrl,
         year: machine.year,
         serialNumber: machine.serialNumber,
         hourMeter: machine.hourMeter,
@@ -87,6 +89,7 @@ export class PrismaMachineRepository implements IMachineRepository {
       type: prismaMachine.type ?? '',
       brand: prismaMachine.brand ?? '',
       model: prismaMachine.model ?? '',
+      imageUrl: prismaMachine.imageUrl ?? null,
       year: prismaMachine.year ?? new Date().getFullYear(),
       serialNumber: prismaMachine.serialNumber ?? '',
       hourMeter: prismaMachine.hourMeter ?? 0,
@@ -97,6 +100,16 @@ export class PrismaMachineRepository implements IMachineRepository {
       currentLocation: prismaMachine.currentLocation ?? '',
       createdAt: prismaMachine.createdAt,
       updatedAt: prismaMachine.updatedAt,
+    });
+  }
+
+  async update(id: string, data: Partial<{ hourMeter: number }>): Promise<void> {
+    await prisma.machine.update({
+      where: { id },
+      data: {
+        ...data,
+        updatedAt: new Date(),
+      },
     });
   }
 

@@ -48,7 +48,7 @@ model Machine {
   type             String
   brand            String
   model            String
-
+  imageUrl         String?
   year             Int?
   serialNumber     String?
   hourMeter        Float?

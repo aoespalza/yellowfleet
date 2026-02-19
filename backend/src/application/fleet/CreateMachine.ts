@@ -8,6 +8,7 @@ export interface CreateMachineInput {
   type: string;
   brand: string;
   model: string;
+  imageUrl?: string;
   year: number;
   serialNumber: string;
   hourMeter: number;
@@ -26,6 +27,7 @@ export class CreateMachine {
       type: input.type,
       brand: input.brand,
       model: input.model,
+      imageUrl: input.imageUrl,
       year: input.year,
       serialNumber: input.serialNumber,
       hourMeter: input.hourMeter,

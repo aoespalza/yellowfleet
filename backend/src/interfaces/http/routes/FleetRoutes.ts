@@ -19,15 +19,19 @@ const fleetController = new FleetController();
 
 const router = Router();
 
-// Rutas públicas (solo lectura)
+// Rutas públicas (sin autenticación) - las más específicas primero
+router.get('/machines/:id/details-public', (req, res) => fleetController.getDetailsPublic(req, res));
 router.get('/machines', (req, res) => fleetController.list(req, res));
 router.get('/machines/:id', (req, res) => fleetController.getById(req, res));
-router.get('/machines/:id/details', (req, res) => fleetController.getDetails(req, res));
+
+// Rutas protegidas - detalles completos (requieren autenticación)
+router.get('/machines/:id/details', authenticateToken, (req, res) => fleetController.getDetails(req, res));
 
 // Rutas protegidas (requieren autenticación y rol ADMIN o MANAGER)
 router.post('/machines', authenticateToken, authorizeRole('ADMIN', 'MANAGER'), (req, res) => fleetController.create(req, res));
+router.patch('/machines/:id/hourmeter', authenticateToken, authorizeRole('ADMIN', 'MANAGER'), (req, res) => fleetController.updateHourMeter(req, res));
 router.patch('/machines/:id/status', authenticateToken, authorizeRole('ADMIN', 'MANAGER'), (req, res) => fleetController.changeStatus(req, res));
 router.put('/machines/:id', authenticateToken, authorizeRole('ADMIN', 'MANAGER'), (req, res) => fleetController.update(req, res));
 router.delete('/machines/:id', authenticateToken, authorizeRole('ADMIN', 'MANAGER'), (req, res) => fleetController.delete(req, res));
-  
+ 
 export default router;

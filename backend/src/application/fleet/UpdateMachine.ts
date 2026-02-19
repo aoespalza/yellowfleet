@@ -6,6 +6,7 @@ export interface UpdateMachineInput {
   type: string;
   brand: string;
   model: string;
+  imageUrl?: string;
   year: number;
   serialNumber: string;
   hourMeter: number;
@@ -30,6 +31,7 @@ export class UpdateMachine {
       type: input.type,
       brand: input.brand,
       model: input.model,
+      imageUrl: input.imageUrl,
       year: input.year,
       serialNumber: input.serialNumber,
       hourMeter: input.hourMeter,

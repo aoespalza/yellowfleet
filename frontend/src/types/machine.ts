@@ -6,6 +6,7 @@ export interface Machine {
   type: string;
   brand: string;
   model: string;
+  imageUrl?: string;
   year: number;
   serialNumber: string;
   hourMeter: null;
@@ -23,6 +24,7 @@ export interface MachineFormData {
   type: string;
   brand: string;
   model: string;
+  imageUrl?: string;
   year: number;
   serialNumber: string;
   hourMeter: number;
