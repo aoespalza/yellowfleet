@@ -1,6 +1,14 @@
 import api from './axios';
 import type { WorkOrder } from '../types/workOrder';
 
+export interface WorkOrderLog {
+  id: string;
+  workOrderId: string;
+  date: string;
+  description: string;
+  createdAt: string;
+}
+
 export const workOrderApi = {
   getAll: async (): Promise<WorkOrder[]> => {
     const response = await api.get('/workshop');
@@ -29,7 +37,30 @@ export const workOrderApi = {
     return response.data;
   },
 
+  updateStatus: async (id: string, status: string): Promise<void> => {
+    await api.patch(`/workshop/${id}/status`, { status });
+  },
+
+  close: async (id: string, exitDate: Date): Promise<void> => {
+    await api.patch(`/workshop/${id}/close`, { exitDate });
+  },
+
   delete: async (id: string): Promise<void> => {
     await api.delete(`/workshop/${id}`);
+  },
+
+  // Logs
+  getLogs: async (workOrderId: string): Promise<WorkOrderLog[]> => {
+    const response = await api.get(`/workshop/${workOrderId}/logs`);
+    return response.data;
+  },
+
+  addLog: async (workOrderId: string, description: string): Promise<WorkOrderLog> => {
+    const response = await api.post(`/workshop/${workOrderId}/logs`, { description });
+    return response.data;
+  },
+
+  deleteLog: async (logId: string): Promise<void> => {
+    await api.delete(`/workshop/logs/${logId}`);
   },
 };

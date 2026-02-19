@@ -5,6 +5,7 @@ import type { WorkOrder, WorkOrderFormData, WorkOrderType } from '../types/workO
 import type { Machine } from '../types/machine';
 import { WorkOrderForm } from '../components/WorkOrderForm';
 import { WorkOrdersTable } from '../components/WorkOrdersTable';
+import { WorkOrderLogs } from '../components/WorkOrderLogs';
 import './WorkshopPage.css';
 
 const initialFormData: WorkOrderFormData = {
@@ -26,6 +27,7 @@ export function WorkshopPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingWorkOrderId, setEditingWorkOrderId] = useState<string | null>(null);
   const [formData, setFormData] = useState<WorkOrderFormData>(initialFormData);
+  const [showLogs, setShowLogs] = useState<string | null>(null);
 
   const fetchData = async () => {
     try {
@@ -121,6 +123,29 @@ export function WorkshopPage() {
     }
   };
 
+  const handleStatusChange = async (id: string, newStatus: string) => {
+    try {
+      await workOrderApi.updateStatus(id, newStatus);
+      fetchData();
+    } catch (error) {
+      console.error('Error updating status:', error);
+    }
+  };
+
+  const handleClose = async (id: string) => {
+    const exitDate = new Date().toISOString().split('T')[0];
+    try {
+      await workOrderApi.close(id, new Date(exitDate));
+      fetchData();
+    } catch (error) {
+      console.error('Error closing work order:', error);
+    }
+  };
+
+  const handleShowLogs = (workOrderId: string) => {
+    setShowLogs(workOrderId);
+  };
+
   const resetForm = () => {
     setFormData(initialFormData);
     setEditingWorkOrderId(null);
@@ -159,11 +184,22 @@ export function WorkshopPage() {
       {loading ? (
         <div className="loading">Cargando órdenes de trabajo...</div>
       ) : (
-        <WorkOrdersTable
-          workOrders={workOrders}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
+        <>
+          <WorkOrdersTable
+            workOrders={workOrders}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onStatusChange={handleStatusChange}
+            onClose={handleClose}
+            onShowLogs={handleShowLogs}
+          />
+          {showLogs && (
+            <WorkOrderLogs
+              workOrderId={showLogs}
+              onClose={() => setShowLogs(null)}
+            />
+          )}
+        </>
       )}
     </div>
   );

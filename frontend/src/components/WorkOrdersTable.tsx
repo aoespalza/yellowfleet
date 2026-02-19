@@ -5,6 +5,9 @@ interface WorkOrdersTableProps {
   workOrders: WorkOrder[];
   onEdit: (workOrder: WorkOrder) => void;
   onDelete: (id: string) => void;
+  onStatusChange: (id: string, status: string) => void;
+  onClose: (id: string) => void;
+  onShowLogs: (id: string) => void;
 }
 
 const typeLabels: Record<string, string> = {
@@ -13,7 +16,7 @@ const typeLabels: Record<string, string> = {
   PREDICTIVE: 'Predictivo',
 };
 
-export function WorkOrdersTable({ workOrders, onEdit, onDelete }: WorkOrdersTableProps) {
+export function WorkOrdersTable({ workOrders, onEdit, onDelete, onStatusChange, onClose, onShowLogs }: WorkOrdersTableProps) {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '—';
     return new Date(dateString).toLocaleDateString('es-CL');
@@ -64,6 +67,49 @@ export function WorkOrdersTable({ workOrders, onEdit, onDelete }: WorkOrdersTabl
               </td>
               <td>
                 <div className="action-buttons">
+                  {workOrder.status === 'OPEN' && (
+                    <button
+                      className="btn-status"
+                      onClick={() => onStatusChange(workOrder.id, 'IN_PROGRESS')}
+                      title="Iniciar"
+                    >
+                      ▶️
+                    </button>
+                  )}
+                  {workOrder.status === 'IN_PROGRESS' && (
+                    <button
+                      className="btn-status"
+                      onClick={() => onStatusChange(workOrder.id, 'WAITING_PARTS')}
+                      title="Esperar Repuestos"
+                    >
+                      ⏳
+                    </button>
+                  )}
+                  {workOrder.status === 'WAITING_PARTS' && (
+                    <button
+                      className="btn-status"
+                      onClick={() => onStatusChange(workOrder.id, 'IN_PROGRESS')}
+                      title="Reanudar"
+                    >
+                      ▶️
+                    </button>
+                  )}
+                  {['OPEN', 'IN_PROGRESS', 'WAITING_PARTS'].includes(workOrder.status) && (
+                    <button
+                      className="btn-close"
+                      onClick={() => onClose(workOrder.id)}
+                      title="Cerrar Orden"
+                    >
+                      ✅
+                    </button>
+                  )}
+                  <button
+                    className="btn-logs"
+                    onClick={() => onShowLogs(workOrder.id)}
+                    title="Bitácora"
+                  >
+                    📋
+                  </button>
                   <button
                     className="btn-edit"
                     onClick={() => onEdit(workOrder)}
