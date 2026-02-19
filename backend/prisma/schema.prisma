@@ -7,6 +7,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  ADMIN
+  MANAGER
+  OPERATOR
+}
+
 enum MachineStatus {
   AVAILABLE
   IN_CONTRACT
@@ -116,4 +122,14 @@ model MachineAssignment {
   machine         Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
 
   @@unique([machineId, contractId])
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String
+  email     String?
+  role      UserRole @default(OPERATOR)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
