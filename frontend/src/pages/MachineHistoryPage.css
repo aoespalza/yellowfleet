@@ -1,0 +1,292 @@
+.history-page {
+  padding: 24px;
+  font-family: Arial, sans-serif;
+}
+
+.history-page.loading,
+.history-page.error {
+  text-align: center;
+  padding: 60px;
+  color: #6b7280;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.btn-back {
+  background: white;
+  border: 1px solid #d1d5db;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #374151;
+  transition: all 0.2s;
+}
+
+.btn-back:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 24px;
+  color: #1f2937;
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+  background: white;
+  border-radius: 8px 8px 0 0;
+}
+
+.tab {
+  flex: 1;
+  padding: 14px 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: #6b7280;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.tab:hover {
+  color: #3b82f6;
+  background: #eff6ff;
+}
+
+.tab.active {
+  color: #3b82f6;
+  border-bottom-color: #3b82f6;
+  font-weight: 600;
+}
+
+.tab-content {
+  background: white;
+  padding: 24px;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.detail-section {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.detail-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 15px;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 10px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 13px;
+}
+
+.detail-row .label {
+  color: #6b7280;
+}
+
+.detail-row .value {
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.status-badge {
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.status-available {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-contract {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.status-workshop {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-inactive {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.profitability-section,
+.workshop-summary {
+  margin-bottom: 28px;
+}
+
+.profitability-section h3,
+.workshop-summary h3 {
+  margin: 0 0 16px 0;
+  font-size: 15px;
+  color: #374151;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+.kpi-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+
+.kpi-label {
+  display: block;
+  font-size: 11px;
+  color: #6b7280;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.kpi-value {
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.kpi-value.income,
+.kpi-value.profit {
+  color: #059669;
+}
+
+.kpi-value.expense,
+.kpi-value.loss {
+  color: #dc2626;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.data-table th {
+  background: #f9fafb;
+  padding: 12px 10px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.data-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #e5e7eb;
+  color: #1f2937;
+}
+
+.data-table tr:hover {
+  background: #f9fafb;
+}
+
+.data-table .income {
+  color: #059669;
+  font-weight: 500;
+}
+
+.data-table .expense {
+  color: #dc2626;
+}
+
+.data-table .profit {
+  color: #059669;
+  font-weight: 600;
+}
+
+.data-table .loss {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.status-badge-sm {
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-badge-sm.active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge-sm.completed {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.status-badge-sm.draft {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.type-badge {
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.type-badge.preventive {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.type-badge.corrective {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.type-badge.predictive {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 50px;
+  color: #9ca3af;
+  background: #f9fafb;
+  border-radius: 8px;
+}

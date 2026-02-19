@@ -1,6 +1,17 @@
 import api from './axios';
 import type { Contract, ContractFormData } from '../types/contract';
 
+export interface MachineAssignment {
+  id: string;
+  contractId: string;
+  machineId: string;
+  hourlyRate: number;
+  workedHours: number;
+  maintenanceCost: number;
+  generatedIncome: number;
+  margin: number;
+}
+
 export const contractApi = {
   getAll: async (): Promise<Contract[]> => {
     const response = await api.get('/contracts');
@@ -19,5 +30,9 @@ export const contractApi = {
 
   delete: async (id: string): Promise<void> => {
     await api.delete(`/contracts/${id}`);
+  },
+
+  assignMachine: async (contractId: string, machineId: string, hourlyRate: number): Promise<void> => {
+    await api.post(`/contracts/${contractId}/assign`, { machineId, hourlyRate });
   },
 };

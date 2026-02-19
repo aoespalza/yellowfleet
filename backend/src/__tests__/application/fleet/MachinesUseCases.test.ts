@@ -1,10 +1,10 @@
-import { Machine } from '../../domain/fleet/Machine';
-import { MachineStatus } from '../../domain/fleet/MachineStatus';
-import { CreateMachine } from '../../application/fleet/CreateMachine';
-import { ChangeMachineStatus } from '../../application/fleet/ChangeMachineStatus';
-import { GetMachineById } from '../../application/fleet/GetMachineById';
-import { ListMachines } from '../../application/fleet/ListMachines';
-import { IMachineRepository } from '../../application/fleet/IMachineRepository';
+import { Machine } from '../../../domain/fleet/Machine';
+import { MachineStatus } from '../../../domain/fleet/MachineStatus';
+import { CreateMachine } from '../../../application/fleet/CreateMachine';
+import { ChangeMachineStatus } from '../../../application/fleet/ChangeMachineStatus';
+import { GetMachineById } from '../../../application/fleet/GetMachineById';
+import { ListMachines } from '../../../application/fleet/ListMachines';
+import { IMachineRepository } from '../../../application/fleet/IMachineRepository';
 
 describe('Machine Entity', () => {
   const createMachineProps = {

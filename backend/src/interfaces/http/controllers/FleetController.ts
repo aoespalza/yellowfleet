@@ -115,5 +115,149 @@ export class FleetController {
       res.status(400).json({ error: message });
     }
   }
-  
+
+  public async getDetails(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const prisma = await import('@prisma/client');
+      const { PrismaClient } = prisma;
+      const client = new PrismaClient();
+
+      // Get machine data
+      const machine = await client.machine.findUnique({
+        where: { id },
+      });
+
+      if (!machine) {
+        res.status(404).json({ error: 'Machine not found' });
+        return;
+      }
+
+      // Get current contract assignment (IN_CONTRACT status)
+      const currentAssignment = await client.machineAssignment.findFirst({
+        where: {
+          machineId: id,
+          contract: {
+            status: 'ACTIVE',
+          },
+        },
+        include: {
+          contract: true,
+        },
+      });
+
+      // Get all assignments (historical)
+      const allAssignments = await client.machineAssignment.findMany({
+        where: { machineId: id },
+        include: {
+          contract: true,
+        },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      // Get work orders
+      const workOrders = await client.workOrder.findMany({
+        where: { machineId: id },
+        orderBy: { entryDate: 'desc' },
+      });
+
+      // Calculate profitability by contract
+      const contractsProfitability = allAssignments.map((assignment) => ({
+        contractId: assignment.contractId,
+        contractCode: assignment.contract.code,
+        customer: assignment.contract.customer,
+        startDate: assignment.contract.startDate,
+        endDate: assignment.contract.endDate,
+        status: assignment.contract.status,
+        hourlyRate: assignment.hourlyRate,
+        workedHours: assignment.workedHours,
+        generatedIncome: assignment.generatedIncome,
+        maintenanceCost: assignment.maintenanceCost,
+        margin: assignment.margin,
+      }));
+
+      // Total profitability
+      const totalIncome = allAssignments.reduce((sum, a) => sum + a.generatedIncome, 0);
+      const totalMaintenance = allAssignments.reduce((sum, a) => sum + a.maintenanceCost, 0);
+      const totalMargin = allAssignments.reduce((sum, a) => sum + a.margin, 0);
+      const totalWorkedHours = allAssignments.reduce((sum, a) => sum + a.workedHours, 0);
+
+      // Workshop stats
+      const totalWorkshopVisits = workOrders.length;
+      const totalSparePartsCost = workOrders.reduce((sum, w) => sum + w.sparePartsCost, 0);
+      const totalLaborCost = workOrders.reduce((sum, w) => sum + w.laborCost, 0);
+      const totalWorkshopCost = workOrders.reduce((sum, w) => sum + w.totalCost, 0);
+      const totalDowntimeHours = workOrders.reduce((sum, w) => sum + (w.downtimeHours || 0), 0);
+
+      const response = {
+        // Machine details
+        id: machine.id,
+        code: machine.code,
+        type: machine.type,
+        brand: machine.brand,
+        model: machine.model,
+        year: machine.year,
+        serialNumber: machine.serialNumber,
+        hourMeter: machine.hourMeter,
+        acquisitionDate: machine.acquisitionDate,
+        acquisitionValue: machine.acquisitionValue,
+        usefulLifeHours: machine.usefulLifeHours,
+        status: machine.status,
+        currentLocation: machine.currentLocation,
+        createdAt: machine.createdAt,
+        updatedAt: machine.updatedAt,
+
+        // Current contract
+        currentContract: currentAssignment
+          ? {
+              id: currentAssignment.contract.id,
+              code: currentAssignment.contract.code,
+              customer: currentAssignment.contract.customer,
+              startDate: currentAssignment.contract.startDate,
+              endDate: currentAssignment.contract.endDate,
+              hourlyRate: currentAssignment.hourlyRate,
+            }
+          : null,
+
+        // Historical contracts
+        contracts: contractsProfitability,
+
+        // Profitability summary
+        profitability: {
+          totalWorkedHours,
+          totalIncome,
+          totalMaintenanceCost: totalMaintenance,
+          totalMargin,
+        },
+
+        // Work orders
+        workOrders: workOrders.map((wo) => ({
+          id: wo.id,
+          type: wo.type,
+          status: wo.status,
+          entryDate: wo.entryDate,
+          exitDate: wo.exitDate,
+          sparePartsCost: wo.sparePartsCost,
+          laborCost: wo.laborCost,
+          totalCost: wo.totalCost,
+          downtimeHours: wo.downtimeHours,
+        })),
+
+        // Workshop summary
+        workshopSummary: {
+          totalVisits: totalWorkshopVisits,
+          totalSparePartsCost,
+          totalLaborCost,
+          totalCost: totalWorkshopCost,
+          totalDowntimeHours,
+        },
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      console.error('Error fetching machine details:', error);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      res.status(400).json({ error: message });
+    }
+  }
 }

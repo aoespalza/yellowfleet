@@ -1,6 +1,9 @@
 import { IContractRepository } from './IContractRepository';
 import { MachineAssignment } from '../../domain/contracts/MachineAssignment';
-import { MachineAssignmentProps } from '../../domain/contracts/MachineAssignmentProps';
+import { MachineStatus } from '../../domain/fleet/MachineStatus';
+import { PrismaClient } from '@prisma/client';
+
+const prismaClient = new PrismaClient();
 
 export interface AssignMachineInput {
   contractId: string;
@@ -12,13 +15,15 @@ export class AssignMachineToContract {
   constructor(private contractRepository: IContractRepository) {}
 
   async execute(input: AssignMachineInput): Promise<void> {
+    console.log('AssignMachineToContract.execute:', input);
+    
     const contract = await this.contractRepository.findById(input.contractId);
 
     if (!contract) {
       throw new Error('Contract not found');
     }
 
-    const assignmentProps: MachineAssignmentProps = {
+    const assignment = MachineAssignment.create({
       contractId: input.contractId,
       machineId: input.machineId,
       hourlyRate: input.hourlyRate,
@@ -26,10 +31,18 @@ export class AssignMachineToContract {
       maintenanceCost: 0,
       generatedIncome: 0,
       margin: 0,
-    };
+    });
 
-    const assignment = MachineAssignment.create(assignmentProps);
     contract.addMachineAssignment(assignment);
     await this.contractRepository.save(contract);
+
+    // Actualizar estado de la máquina a IN_CONTRACT
+    await prismaClient.machine.update({
+      where: { id: input.machineId },
+      data: {
+        status: MachineStatus.IN_CONTRACT as any,
+        updatedAt: new Date(),
+      },
+    });
   }
 }

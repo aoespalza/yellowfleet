@@ -2,6 +2,10 @@ import { ContractProps } from './ContractProps';
 import { ContractStatus } from './ContractStatus';
 import { MachineAssignment } from './MachineAssignment';
 
+function generateId(): string {
+  return crypto.randomUUID();
+}
+
 export class Contract {
   private props: ContractProps;
   private assignments: MachineAssignment[] = [];
@@ -10,12 +14,17 @@ export class Contract {
     this.props = props;
   }
 
-  public static create(props: ContractProps): Contract {
+  public static create(props: Omit<ContractProps, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): Contract {
     return new Contract({
       ...props,
+      id: props.id || generateId(),
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+  }
+
+  public static fromDatabase(props: ContractProps): Contract {
+    return new Contract(props);
   }
 
   public activate(): void {
@@ -47,6 +56,25 @@ export class Contract {
       throw new Error('Can only add machine assignments to an ACTIVE contract');
     }
     this.assignments.push(assignment);
+    this.props.updatedAt = new Date();
+  }
+
+  public update(data: {
+    code: string;
+    customer: string;
+    startDate: Date;
+    endDate: Date;
+    value: number;
+    status: ContractStatus;
+    description: string;
+  }): void {
+    this.props.code = data.code;
+    this.props.customer = data.customer;
+    this.props.startDate = data.startDate;
+    this.props.endDate = data.endDate;
+    this.props.value = data.value;
+    this.props.status = data.status;
+    this.props.description = data.description;
     this.props.updatedAt = new Date();
   }
 

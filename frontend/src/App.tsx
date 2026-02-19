@@ -1,14 +1,16 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useState } from 'react';
 import FleetPage from './pages/FleetPage';
 import { DashboardPage } from './pages/DashboardPage';
 import ContractsPage from './pages/ContractsPage';
 import { WorkshopPage } from './pages/WorkshopPage';
+import { MachineHistoryPage } from './pages/MachineHistoryPage';
 import './App.css';
 
 type Page = 'dashboard' | 'fleet' | 'contracts' | 'workshop';
 
-function App() {
-  const [currentPage, setCurrentPage] = useState<Page>('dashboard');
+function AppNavigator() {
+  const [currentPage, setCurrentPage] = useState<Page>('fleet');
 
   return (
     <div className="app">
@@ -48,6 +50,17 @@ function App() {
         {currentPage === 'workshop' && <WorkshopPage />}
       </main>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<AppNavigator />} />
+        <Route path="/fleet/:id/history" element={<MachineHistoryPage />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

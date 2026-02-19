@@ -27,11 +27,15 @@ export class Machine {
 
   // 🔥 CREATE (para nuevas máquinas)
   static create(
-    props: Omit<MachineProps, 'id' | 'createdAt' | 'updatedAt'>
+    props: Omit<MachineProps, 'id' | 'createdAt' | 'updatedAt' | 'acquisitionDate'> & { 
+      id?: string;
+      acquisitionDate?: Date;
+    }
   ): Machine {
     return new Machine({
       ...props,
-      id: crypto.randomUUID(),
+      id: props.id || crypto.randomUUID(),
+      acquisitionDate: props.acquisitionDate || new Date(),
       createdAt: new Date(),
       updatedAt: new Date(),
     });

@@ -1,7 +1,6 @@
 import { IMachineRepository } from './IMachineRepository';
 import { Machine } from '../../domain/fleet/Machine';
 import { MachineStatus } from '../../domain/fleet/MachineStatus';
-import { randomUUID } from 'crypto';
 
 
 export interface CreateMachineInput {
@@ -23,7 +22,6 @@ export class CreateMachine {
 
   async execute(input: CreateMachineInput): Promise<void> {
     const machine = Machine.create({
-      id: randomUUID(), // 🔥 generar ID aquí
       code: input.code,
       type: input.type,
       brand: input.brand,
@@ -36,8 +34,6 @@ export class CreateMachine {
       usefulLifeHours: input.usefulLifeHours,
       status: MachineStatus.AVAILABLE,
       currentLocation: input.currentLocation,
-      createdAt: new Date(),
-      updatedAt: new Date(),
     });
 
     await this.machineRepository.save(machine);

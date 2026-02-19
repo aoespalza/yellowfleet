@@ -13,7 +13,8 @@ interface WorkOrderFormProps {
 const statusOptions: { value: WorkOrderStatus; label: string }[] = [
   { value: 'OPEN', label: 'Abierto' },
   { value: 'IN_PROGRESS', label: 'En Progreso' },
-  { value: 'CLOSED', label: 'Cerrado' },
+  { value: 'COMPLETED', label: 'Completado' },
+  { value: 'CANCELLED', label: 'Cancelado' },
 ];
 
 const typeOptions: { value: WorkOrderType; label: string }[] = [

@@ -1,5 +1,5 @@
-import { MachineStatus } from '../../domain/fleet/entities/Machine';
-import { ContractStatus } from '../../domain/contracts/entities/Contract';
+import { MachineStatus } from '../../domain/fleet/MachineStatus';
+import { ContractStatus } from '../../domain/contracts/ContractStatus';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -7,6 +7,7 @@ const prisma = new PrismaClient();
 export interface AssignMachineToContractDTO {
   machineId: string;
   contractId: string;
+  hourlyRate: number;
 }
 
 export class AssignMachineToContractUseCase {
@@ -32,10 +33,13 @@ export class AssignMachineToContractUseCase {
       throw new Error('Cannot assign: machine is in workshop');
     }
 
+    // Check if machine is already assigned to an active contract
     const activeAssignment = await prisma.machineAssignment.findFirst({
       where: {
         machineId: dto.machineId,
-        releasedAt: null,
+        contract: {
+          status: ContractStatus.ACTIVE,
+        },
       },
     });
 
@@ -47,6 +51,11 @@ export class AssignMachineToContractUseCase {
       data: {
         machineId: dto.machineId,
         contractId: dto.contractId,
+        hourlyRate: dto.hourlyRate,
+        workedHours: 0,
+        maintenanceCost: 0,
+        generatedIncome: 0,
+        margin: 0,
       },
     });
 

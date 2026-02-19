@@ -1,4 +1,5 @@
-import { Contract, ContractStatus } from '../../domain/contracts/entities/Contract';
+import { Contract } from '../../domain/contracts/Contract';
+import { ContractStatus } from '../../domain/contracts/ContractStatus';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -14,7 +15,8 @@ export interface CreateContractDTO {
 
 export class CreateContractUseCase {
   async execute(dto: CreateContractDTO) {
-    const existing = await prisma.contract.findUnique({
+    // Check for existing contract by code
+    const existing = await prisma.contract.findFirst({
       where: { code: dto.code },
     });
 
@@ -22,7 +24,7 @@ export class CreateContractUseCase {
       throw new Error('Contract code already exists');
     }
 
-    const contract = new Contract({
+    const contract = Contract.create({
       code: dto.code,
       customer: dto.customer,
       startDate: dto.startDate,
@@ -33,7 +35,16 @@ export class CreateContractUseCase {
     });
 
     const created = await prisma.contract.create({
-      data: contract.toPlainObject(),
+      data: {
+        id: contract.id!,
+        code: contract.code,
+        customer: contract.customer,
+        startDate: contract.startDate,
+        endDate: contract.endDate,
+        value: contract.value,
+        status: contract.status as unknown as import('@prisma/client').ContractStatus,
+        description: contract.description,
+      },
     });
 
     return created;

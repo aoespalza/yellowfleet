@@ -1,5 +1,5 @@
 export interface MachineAssignmentProps {
-  id?: string;
+  id: string;
   contractId: string;
   machineId: string;
   hourlyRate: number;

@@ -17,6 +17,7 @@ const router = Router();
 
 router.get('/', (req, res) => contractsController.list(req, res));
 router.post('/', (req, res) => contractsController.create(req, res));
+router.put('/:id', (req, res) => contractsController.update(req, res));
 router.post('/:id/assign', (req, res) => contractsController.assignMachine(req, res));
 router.patch('/:id/close', (req, res) => contractsController.close(req, res));
 router.delete('/:id', (req, res) => contractsController.delete(req, res));

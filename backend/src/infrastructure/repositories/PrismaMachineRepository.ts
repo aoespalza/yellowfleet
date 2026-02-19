@@ -69,6 +69,16 @@ export class PrismaMachineRepository implements IMachineRepository {
     });
   }
 
+  async updateStatus(id: string, status: MachineStatus): Promise<void> {
+    await prisma.machine.update({
+      where: { id },
+      data: {
+        status: status as unknown as import('@prisma/client').MachineStatus,
+        updatedAt: new Date(),
+      },
+    });
+  }
+
   // 🔥 Mapper centralizado (PRO)
   private toDomain(prismaMachine: any): Machine {
     return Machine.restore({

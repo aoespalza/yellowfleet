@@ -3,6 +3,7 @@ import { contractApi } from '../api/contractApi';
 import type { Contract, ContractFormData } from '../types/contract';
 import { ContractForm } from '../components/ContractForm';
 import { ContractsTable } from '../components/ContractsTable';
+import { AssignMachineModal } from '../components/AssignMachineModal';
 import './ContractsPage.css';
 
 const initialFormData: ContractFormData = {
@@ -21,6 +22,7 @@ export function ContractsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingContractId, setEditingContractId] = useState<string | null>(null);
   const [formData, setFormData] = useState<ContractFormData>(initialFormData);
+  const [assignModal, setAssignModal] = useState<{ contractId: string; contractCode: string } | null>(null);
 
   const fetchContracts = async () => {
     try {
@@ -58,8 +60,10 @@ export function ContractsPage() {
       }
       resetForm();
       fetchContracts();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving contract:', error);
+      const message = error.response?.data?.error || error.message;
+      alert('Error: ' + message);
     }
   };
 
@@ -95,6 +99,10 @@ export function ContractsPage() {
     setShowForm(false);
   };
 
+  const handleAssignMachine = (contract: Contract) => {
+    setAssignModal({ contractId: contract.id, contractCode: contract.code });
+  };
+
   return (
     <div className="contracts-page">
       <div className="page-header">
@@ -126,11 +134,22 @@ export function ContractsPage() {
       {loading ? (
         <div className="loading">Cargando contratos...</div>
       ) : (
-        <ContractsTable
-          contracts={contracts}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
+        <>
+          <ContractsTable
+            contracts={contracts}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onAssign={handleAssignMachine}
+          />
+          {assignModal && (
+            <AssignMachineModal
+              contractId={assignModal.contractId}
+              contractCode={assignModal.contractCode}
+              onClose={() => setAssignModal(null)}
+              onAssigned={fetchContracts}
+            />
+          )}
+        </>
       )}
     </div>
   );

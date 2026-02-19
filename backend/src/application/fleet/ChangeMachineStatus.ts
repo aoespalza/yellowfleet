@@ -16,18 +16,6 @@ export class ChangeMachineStatus {
       throw new Error('Machine not found');
     }
 
-    switch (input.newStatus) {
-      case MachineStatus.IN_CONTRACT:
-        machine.assignToContract();
-        break;
-      case MachineStatus.IN_WORKSHOP:
-        machine.sendToWorkshop();
-        break;
-      case MachineStatus.AVAILABLE:
-        machine.markAvailable();
-        break;
-    }
-
-    await this.machineRepository.save(machine);
+    await this.machineRepository.updateStatus(input.machineId, input.newStatus);
   }
 }

@@ -8,7 +8,9 @@ interface WorkOrderStatusBadgeProps {
 const statusConfig: Record<WorkOrderStatus, { label: string; className: string }> = {
   OPEN: { label: 'Abierto', className: 'workorder-status-open' },
   IN_PROGRESS: { label: 'En Progreso', className: 'workorder-status-progress' },
-  CLOSED: { label: 'Cerrado', className: 'workorder-status-closed' },
+  WAITING_PARTS: { label: 'Esperando Repuestos', className: 'workorder-status-waiting' },
+  COMPLETED: { label: 'Completado', className: 'workorder-status-completed' },
+  CANCELLED: { label: 'Cancelado', className: 'workorder-status-cancelled' },
 };
 
 export function WorkOrderStatusBadge({ status }: WorkOrderStatusBadgeProps) {

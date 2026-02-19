@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { machineApi } from '../api/machineApi';
 import type { Machine, MachineFormData } from '../types/machine';
 import { StatusBadge } from '../components/StatusBadge';
@@ -74,11 +75,11 @@ export function FleetPage() {
       model: machine.model,
       year: machine.year,
       serialNumber: machine.serialNumber,
-      hourMeter: machine.hourMeter,
-      acquisitionDate: new Date(machine.acquisitionDate).toISOString().split('T')[0],
-      acquisitionValue: machine.acquisitionValue,
-      usefulLifeHours: machine.usefulLifeHours,
-      currentLocation: machine.currentLocation,
+      hourMeter: machine.hourMeter ?? 0,
+      acquisitionDate: machine.acquisitionDate ? new Date(machine.acquisitionDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      acquisitionValue: machine.acquisitionValue ?? 0,
+      usefulLifeHours: machine.usefulLifeHours ?? 10000,
+      currentLocation: machine.currentLocation ?? '',
     });
     setEditingMachineId(machine.id);
     setShowForm(true);
@@ -284,7 +285,11 @@ export function FleetPage() {
             <tbody>
               {machines.map((machine) => (
                 <tr key={machine.id}>
-                  <td>{machine.code}</td>
+                  <td>
+                    <Link to={`/fleet/${machine.id}/history`} className="machine-code-link">
+                      {machine.code}
+                    </Link>
+                  </td>
                   <td>{machine.type}</td>
                   <td>{machine.brand}</td>
                   <td>{machine.model}</td>
@@ -300,6 +305,13 @@ export function FleetPage() {
                   </td>
                   <td>
                     <div className="action-buttons">
+                      <Link
+                        to={`/fleet/${machine.id}/history`}
+                        className="btn-history"
+                        title="Ver Hoja de Vida"
+                      >
+                        📋
+                      </Link>
                       <button
                         className="btn-edit"
                         onClick={() => handleEdit(machine)}

@@ -1,5 +1,5 @@
-import { ContractStatus } from '../../domain/contracts/entities/Contract';
-import { MachineStatus } from '../../domain/fleet/entities/Machine';
+import { ContractStatus } from '../../domain/contracts/ContractStatus';
+import { MachineStatus } from '../../domain/fleet/MachineStatus';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -23,15 +23,13 @@ export class CloseContractUseCase {
       throw new Error('Can only close active contracts');
     }
 
-    const activeAssignments = contract.assignments.filter((a) => !a.releasedAt);
+    // Get all machine assignments for this contract
+    const assignments = contract.assignments;
 
-    if (activeAssignments.length > 0) {
-      const machineIds = activeAssignments.map((a) => a.machineId);
-      await prisma.machineAssignment.updateMany({
-        where: { id: { in: activeAssignments.map((a) => a.id) } },
-        data: { releasedAt: new Date() },
-      });
-
+    if (assignments.length > 0) {
+      const machineIds = assignments.map((a) => a.machineId);
+      
+      // Update machines to available
       await prisma.machine.updateMany({
         where: { id: { in: machineIds } },
         data: {

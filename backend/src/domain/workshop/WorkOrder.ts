@@ -44,10 +44,11 @@ export class WorkOrder {
 
   public completeWorkOrder(exitDate: Date): void {
     if (
+      this.props.status !== WorkOrderStatus.OPEN &&
       this.props.status !== WorkOrderStatus.IN_PROGRESS &&
       this.props.status !== WorkOrderStatus.WAITING_PARTS
     ) {
-      throw new Error('Can only complete work order from IN_PROGRESS or WAITING_PARTS status');
+      throw new Error('Can only complete work order from OPEN, IN_PROGRESS or WAITING_PARTS status');
     }
     this.props.status = WorkOrderStatus.COMPLETED;
     this.props.exitDate = exitDate;

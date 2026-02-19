@@ -55,3 +55,29 @@
 .app-main {
   flex: 1;
 }
+
+/* Action buttons */
+.btn-history {
+  background: transparent;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.btn-history:hover {
+  background: #dbeafe;
+}
+
+/* Machine code link */
+.machine-code-link {
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.machine-code-link:hover {
+  text-decoration: underline;
+  color: #1d4ed8;
+}

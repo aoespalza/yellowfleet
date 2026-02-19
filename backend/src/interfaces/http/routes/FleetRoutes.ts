@@ -21,6 +21,7 @@ const router = Router();
 router.post('/machines', (req, res) => fleetController.create(req, res));
 router.patch('/machines/:id/status', (req, res) => fleetController.changeStatus(req, res));
 router.get('/machines/:id', (req, res) => fleetController.getById(req, res));
+router.get('/machines/:id/details', (req, res) => fleetController.getDetails(req, res));
 router.get('/machines', (req, res) => fleetController.list(req, res));
 router.put('/machines/:id', (req, res) => fleetController.update(req, res));
 router.delete('/machines/:id', (req, res) => fleetController.delete(req, res));

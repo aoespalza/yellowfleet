@@ -5,9 +5,10 @@ interface ContractsTableProps {
   contracts: Contract[];
   onEdit: (contract: Contract) => void;
   onDelete: (id: string) => void;
+  onAssign: (contract: Contract) => void;
 }
 
-export function ContractsTable({ contracts, onEdit, onDelete }: ContractsTableProps) {
+export function ContractsTable({ contracts, onEdit, onDelete, onAssign }: ContractsTableProps) {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('es-CL');
   };
@@ -34,6 +35,7 @@ export function ContractsTable({ contracts, onEdit, onDelete }: ContractsTablePr
             <th>Inicio</th>
             <th>Fin</th>
             <th>Valor</th>
+            <th>Máquinas</th>
             <th>Estado</th>
             <th>Acciones</th>
           </tr>
@@ -47,10 +49,20 @@ export function ContractsTable({ contracts, onEdit, onDelete }: ContractsTablePr
               <td>{formatDate(contract.endDate)}</td>
               <td>{formatCurrency(contract.value)}</td>
               <td>
+                <span className="machine-count">{contract.machineCount}</span>
+              </td>
+              <td>
                 <ContractStatusBadge status={contract.status} />
               </td>
               <td>
                 <div className="action-buttons">
+                  <button
+                    className="btn-assign"
+                    onClick={() => onAssign(contract)}
+                    title="Asignar Máquina"
+                  >
+                    🏗️
+                  </button>
                   <button
                     className="btn-edit"
                     onClick={() => onEdit(contract)}

@@ -1,7 +1,7 @@
 import { ContractStatus } from './ContractStatus';
 
 export interface ContractProps {
-  id?: string;
+  id: string;
   code: string;
   customer: string;
   startDate: Date;

@@ -11,6 +11,7 @@ export interface Contract {
   description: string;
   createdAt: string;
   updatedAt: string;
+  machineCount: number;
 }
 
 export interface ContractFormData {

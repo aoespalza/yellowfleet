@@ -1,5 +1,9 @@
 import { MachineAssignmentProps } from './MachineAssignmentProps';
 
+function generateId(): string {
+  return crypto.randomUUID();
+}
+
 export class MachineAssignment {
   private props: MachineAssignmentProps;
 
@@ -7,7 +11,7 @@ export class MachineAssignment {
     this.props = props;
   }
 
-  public static create(props: MachineAssignmentProps): MachineAssignment {
+  public static create(props: Omit<MachineAssignmentProps, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): MachineAssignment {
     if (props.hourlyRate < 0) {
       throw new Error('Hourly rate cannot be negative');
     }
@@ -19,9 +23,14 @@ export class MachineAssignment {
     }
     return new MachineAssignment({
       ...props,
+      id: props.id || generateId(),
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+  }
+
+  public static fromDatabase(props: MachineAssignmentProps): MachineAssignment {
+    return new MachineAssignment(props);
   }
 
   public updateWorkedHours(hours: number): void {
@@ -81,6 +90,10 @@ export class MachineAssignment {
 
   public get margin(): number {
     return this.props.margin;
+  }
+
+  public getMargin(): number {
+    return this.margin;
   }
 
   public get createdAt(): Date | undefined {
