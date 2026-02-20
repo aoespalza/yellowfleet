@@ -113,7 +113,9 @@ export class WorkshopController {
         });
       }
 
-      res.status(200).json({ message: 'Work order closed successfully' });
+      // Return the updated work order with downtimeHours calculated
+      const updatedWorkOrder = await prisma.workOrder.findUnique({ where: { id } });
+      res.status(200).json(updatedWorkOrder);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       if (message === 'Work order not found') {

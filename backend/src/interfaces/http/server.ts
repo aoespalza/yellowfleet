@@ -5,6 +5,7 @@ import ContractsRoutes from './routes/ContractsRoutes';
 import WorkshopRoutes from './routes/WorkshopRoutes';
 import FinanceRoutes from './routes/FinanceRoutes';
 import AuthRoutes from './routes/AuthRoutes';
+import RoleRoutes from './routes/RoleRoutes';
 import path from 'path';
 
 const app = express();
@@ -17,6 +18,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
 
 app.use('/api/auth', AuthRoutes);
+app.use('/api/roles', RoleRoutes);
 app.use('/api', FleetRoutes);
 app.use('/api', ContractsRoutes);
 app.use('/api', WorkshopRoutes);

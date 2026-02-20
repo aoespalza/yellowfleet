@@ -230,6 +230,12 @@ export class FleetController {
       const totalWorkshopCost = workOrders.reduce((sum, w) => sum + w.totalCost, 0);
       const totalDowntimeHours = workOrders.reduce((sum, w) => sum + (w.downtimeHours || 0), 0);
 
+      // Total maintenance cost including workshop costs
+      const totalMaintenanceCost = totalMaintenance + totalWorkshopCost;
+
+      // Total margin including workshop costs
+      const totalMarginWithWorkshop = totalIncome - totalMaintenanceCost;
+
       const response = {
         // Machine details
         id: machine.id,
@@ -268,8 +274,8 @@ export class FleetController {
         profitability: {
           totalWorkedHours,
           totalIncome,
-          totalMaintenanceCost: totalMaintenance,
-          totalMargin,
+          totalMaintenanceCost,
+          totalMargin: totalMarginWithWorkshop,
         },
 
         // Work orders
@@ -351,6 +357,7 @@ export class FleetController {
       const totalWorkshopVisits = workOrders.length;
       const totalSparePartsCost = workOrders.reduce((sum, w) => sum + w.sparePartsCost, 0);
       const totalLaborCost = workOrders.reduce((sum, w) => sum + w.laborCost, 0);
+      const totalWorkshopCost = workOrders.reduce((sum, w) => sum + w.totalCost, 0);
       const totalDowntimeHours = workOrders.reduce((sum, w) => sum + (w.downtimeHours || 0), 0);
 
       // Contracts summary
@@ -396,8 +403,8 @@ export class FleetController {
         profitability: {
           totalWorkedHours,
           totalIncome,
-          totalMaintenanceCost: totalMaintenance,
-          totalMargin: totalIncome - totalMaintenance,
+          totalMaintenanceCost: totalMaintenance + totalWorkshopCost,
+          totalMargin: totalIncome - (totalMaintenance + totalWorkshopCost),
         },
         
         workshopSummary: {

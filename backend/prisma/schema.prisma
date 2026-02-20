@@ -150,12 +150,48 @@ model MachineAssignment {
   @@unique([machineId, contractId])
 }
 
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  
+  // Permisos de máquinas
+  canCreateMachine    Boolean @default(false)
+  canEditMachine      Boolean @default(false)
+  canDeleteMachine    Boolean @default(false)
+  canUpdateHourMeter  Boolean @default(false)
+  
+  // Permisos de contratos
+  canCreateContract   Boolean @default(false)
+  canEditContract     Boolean @default(false)
+  canDeleteContract   Boolean @default(false)
+  canAssignMachine    Boolean @default(false)
+  
+  // Permisos de órdenes de trabajo
+  canCreateWorkOrder  Boolean @default(false)
+  canEditWorkOrder    Boolean @default(false)
+  canDeleteWorkOrder  Boolean @default(false)
+  canCloseWorkOrder   Boolean @default(false)
+  
+  // Permisos de documentos legales
+  canEditLegalDocuments Boolean @default(false)
+  
+  // Permisos de usuarios
+  canCreateUser       Boolean @default(false)
+  canEditUser         Boolean @default(false)
+  canDeleteUser       Boolean @default(false)
+  canManageRoles      Boolean @default(false)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model User {
   id        String   @id @default(uuid())
   username  String   @unique
   password  String
   email     String?
-  role      UserRole @default(OPERATOR)
+  role      String   @default("OPERATOR") // Reference to Role name
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   hourMeterLogs HourMeterLog[]
