@@ -1,6 +1,23 @@
 import api from './axios';
 import type { Machine, MachineFormData } from '../types/machine';
 
+export interface LegalDocument {
+  id?: string;
+  machineId?: string;
+  type: string;
+  insuranceName?: string | null;
+  policyNumber?: string | null;
+  expirationDate?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface LegalDocuments {
+  POLIZA?: LegalDocument | null;
+  SOAT?: LegalDocument | null;
+  TECNICO_MECANICA?: LegalDocument | null;
+}
+
 export interface MachineDetails {
   id: string;
   code: string;
@@ -101,6 +118,44 @@ export const machineApi = {
 
   updateHourMeter: async (id: string, hourMeter: number): Promise<{ hourMeter: number }> => {
     const response = await api.patch(`/fleet/machines/${id}/hourmeter`, { hourMeter });
+    return response.data;
+  },
+
+  getHourMeterHistory: async (id: string): Promise<Array<{
+    id: string;
+    machineId: string;
+    userId: string;
+    previousValue: number;
+    newValue: number;
+    createdAt: string;
+    user: { username: string };
+  }>> => {
+    const response = await api.get(`/fleet/machines/${id}/hourmeter-history`);
+    return response.data;
+  },
+
+  getLegalDocuments: async (machineId: string): Promise<LegalDocuments> => {
+    const response = await api.get(`/fleet/machines/${machineId}/legal-documents`);
+    return response.data;
+  },
+
+  updateLegalDocuments: async (machineId: string, documents: Partial<LegalDocuments>): Promise<LegalDocuments> => {
+    const response = await api.put(`/fleet/machines/${machineId}/legal-documents`, documents);
+    return response.data;
+  },
+
+  getExpiringLegalDocuments: async (days: number = 30): Promise<Array<{
+    id: string;
+    machineId: string;
+    machineCode: string;
+    machineName: string;
+    documentType: string;
+    documentName: string;
+    expirationDate: string;
+    daysRemaining: number;
+    urgency: 'critical' | 'warning' | 'normal';
+  }>> => {
+    const response = await api.get(`/fleet/legal-documents/expiring?days=${days}`);
     return response.data;
   },
 };

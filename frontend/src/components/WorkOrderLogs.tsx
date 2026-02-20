@@ -1,15 +1,9 @@
 import { useState, useEffect } from 'react';
-import { workOrderApi } from '../api/workOrderApi';
+import { workOrderApi, type WorkOrderLog as WorkOrderLogType } from '../api/workOrderApi';
 import { useAuth } from '../context/AuthContext';
 import './WorkOrderLogs.css';
 
-interface WorkOrderLog {
-  id: string;
-  workOrderId: string;
-  date: string;
-  description: string;
-  createdAt: string;
-}
+interface WorkOrderLog extends WorkOrderLogType {}
 
 interface WorkOrderLogsProps {
   workOrderId: string;
@@ -19,7 +13,9 @@ interface WorkOrderLogsProps {
 export function WorkOrderLogs({ workOrderId }: WorkOrderLogsProps) {
   const [logs, setLogs] = useState<WorkOrderLog[]>([]);
   const [newLog, setNewLog] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -39,14 +35,22 @@ export function WorkOrderLogs({ workOrderId }: WorkOrderLogsProps) {
 
   const handleAddLog = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newLog.trim()) return;
+    if (!newLog.trim() && !selectedFile) return;
 
+    setSubmitting(true);
     try {
-      await workOrderApi.addLog(workOrderId, newLog);
+      if (selectedFile) {
+        await workOrderApi.uploadLogWithFile(workOrderId, newLog, selectedFile);
+      } else {
+        await workOrderApi.addLog(workOrderId, newLog);
+      }
       setNewLog('');
+      setSelectedFile(null);
       fetchLogs();
     } catch (error) {
       console.error('Error adding log:', error);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -85,8 +89,30 @@ export function WorkOrderLogs({ workOrderId }: WorkOrderLogsProps) {
             onChange={(e) => setNewLog(e.target.value)}
             rows={2}
           />
-          <button type="submit" className="btn-submit-log">
-            + Agregar Registro
+          <div className="log-file-upload">
+            <label className="file-input-label">
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png,.gif,.webp"
+                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                className="file-input"
+              />
+              <span className="file-button">
+                {selectedFile ? '📎 ' + selectedFile.name : '📎 Subir archivo'}
+              </span>
+            </label>
+            {selectedFile && (
+              <button
+                type="button"
+                className="btn-remove-file"
+                onClick={() => setSelectedFile(null)}
+              >
+                ×
+              </button>
+            )}
+          </div>
+          <button type="submit" className="btn-submit-log" disabled={submitting || (!newLog.trim() && !selectedFile)}>
+            {submitting ? 'Guardando...' : '+ Agregar Registro'}
           </button>
         </form>
       )}
@@ -112,6 +138,18 @@ export function WorkOrderLogs({ workOrderId }: WorkOrderLogsProps) {
                 )}
               </div>
               <div className="log-description">{log.description}</div>
+              {log.fileUrl && (
+                <div className="log-file">
+                  <a
+                    href={log.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="log-file-link"
+                  >
+                    📎 {log.fileName || 'Ver archivo'}
+                  </a>
+                </div>
+              )}
             </div>
           ))
         )}

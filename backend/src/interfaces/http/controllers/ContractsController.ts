@@ -5,6 +5,7 @@ import { AssignMachineToContract } from '../../../application/contracts/AssignMa
 import { CloseContract } from '../../../application/contracts/CloseContract';
 import { ListContracts } from '../../../application/contracts/ListContracts';
 import { PrismaContractRepository } from '../../../infrastructure/repositories/PrismaContractRepository';
+import { prisma } from '../../../infrastructure/database/prisma';
 
 const contractRepository = new PrismaContractRepository();
 
@@ -45,6 +46,64 @@ export class ContractsController {
       }
     }
   }
+
+  public async unassignMachine(req: Request, res: Response): Promise<void> {
+    try {
+      const { id, machineId } = req.params;
+      
+      // Delete the assignment
+      await prisma.machineAssignment.deleteMany({
+        where: {
+          contractId: id,
+          machineId: machineId,
+        },
+      });
+
+      // Update machine status to AVAILABLE
+      await prisma.machine.update({
+        where: { id: machineId },
+        data: { status: 'AVAILABLE' as any },
+      });
+
+      res.status(200).json({ message: 'Machine unassigned successfully' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      res.status(400).json({ error: message });
+    }
+  }
+
+  public async getMachines(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      
+      const assignments = await prisma.machineAssignment.findMany({
+        where: { contractId: id },
+        include: {
+          machine: true,
+        },
+      });
+
+      const machines = assignments.map(a => ({
+        id: a.machine.id,
+        code: a.machine.code,
+        brand: a.machine.brand,
+        model: a.machine.model,
+        serialNumber: a.machine.serialNumber,
+        status: a.machine.status,
+        hourlyRate: a.hourlyRate,
+        workedHours: a.workedHours,
+        generatedIncome: a.generatedIncome,
+        maintenanceCost: a.maintenanceCost,
+        margin: a.margin,
+      }));
+
+      res.status(200).json(machines);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      res.status(400).json({ error: message });
+    }
+  }
+
   public async list(req: Request, res: Response): Promise<void> {
     try {
       const listContracts = new ListContracts(contractRepository);

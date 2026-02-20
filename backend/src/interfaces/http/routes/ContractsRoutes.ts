@@ -23,6 +23,8 @@ router.get('/', (req, res) => contractsController.list(req, res));
 router.post('/', authenticateToken, authorizeRole('ADMIN', 'MANAGER'), (req, res) => contractsController.create(req, res));
 router.put('/:id', authenticateToken, authorizeRole('ADMIN', 'MANAGER'), (req, res) => contractsController.update(req, res));
 router.post('/:id/assign', authenticateToken, authorizeRole('ADMIN', 'MANAGER'), (req, res) => contractsController.assignMachine(req, res));
+router.get('/:id/machines', (req, res) => contractsController.getMachines(req, res));
+router.delete('/:id/assign/:machineId', authenticateToken, authorizeRole('ADMIN', 'MANAGER'), (req, res) => contractsController.unassignMachine(req, res));
 router.patch('/:id/close', authenticateToken, authorizeRole('ADMIN', 'MANAGER'), (req, res) => contractsController.close(req, res));
 router.delete('/:id', authenticateToken, authorizeRole('ADMIN', 'MANAGER'), (req, res) => contractsController.delete(req, res));
 

@@ -1,0 +1,215 @@
+.legal-documents-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.legal-documents-card h3 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legal-documents-card.loading {
+  text-align: center;
+  padding: 40px;
+  color: #6b7280;
+}
+
+.documents-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.document-item {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  transition: all 0.2s ease;
+}
+
+.document-item.expired {
+  border-color: #dc2626;
+  background: #fef2f2;
+}
+
+.document-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+  flex-wrap: wrap;
+}
+
+.document-icon {
+  font-size: 20px;
+}
+
+.document-title {
+  font-weight: 600;
+  color: #1f2937;
+  flex: 1;
+}
+
+.expired-badge {
+  background: #dc2626;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.urgency-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.urgency-badge.urgency-critical {
+  background: #dc2626;
+  color: white;
+}
+
+.urgency-badge.urgency-warning {
+  background: #eab308;
+  color: #78350f;
+}
+
+.urgency-badge.urgency-normal {
+  background: #22c55e;
+  color: white;
+}
+
+.document-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.document-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.field-label {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.field-value {
+  color: #1f2937;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.field-value.text-expired {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.btn-edit {
+  margin-top: 8px;
+  padding: 6px 12px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.2s;
+}
+
+.btn-edit:hover {
+  background: #2563eb;
+}
+
+/* Form styles */
+.document-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-field label {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.form-field input {
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  transition: border-color 0.2s;
+}
+
+.form-field input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.form-actions .btn-cancel,
+.form-actions .btn-save {
+  flex: 1;
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.form-actions .btn-cancel {
+  background: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #d1d5db;
+}
+
+.form-actions .btn-cancel:hover {
+  background: #e5e7eb;
+}
+
+.form-actions .btn-save {
+  background: #10b981;
+  color: white;
+  border: none;
+}
+
+.form-actions .btn-save:hover {
+  background: #059669;
+}
+
+.form-actions .btn-save:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .documents-grid {
+    grid-template-columns: 1fr;
+  }
+}

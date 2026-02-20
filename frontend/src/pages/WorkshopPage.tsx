@@ -123,11 +123,17 @@ export function WorkshopPage() {
 
   const handleStatusChange = async (id: string, newStatus: string) => {
     try {
-      await workOrderApi.updateStatus(id, newStatus);
+      // Si el nuevo estado es COMPLETED, usar close en lugar de updateStatus
+      if (newStatus === 'COMPLETED') {
+        const exitDate = new Date().toISOString().split('T')[0];
+        await workOrderApi.close(id, new Date(exitDate));
+      } else {
+        await workOrderApi.updateStatus(id, newStatus);
+      }
       fetchData();
       if (selectedOrder?.id === id) {
         const updated = workOrders.find((wo) => wo.id === id);
-        if (updated) setSelectedOrder(updated);
+        if (updated) setSelectedOrder({ ...updated, status: newStatus as any });
       }
     } catch (error) {
       console.error('Error updating status:', error);
@@ -219,7 +225,18 @@ export function WorkshopPage() {
           <div className="workshop-layout">
             {/* Panel izquierdo: Orden seleccionada (75%) */}
             <div className="workshop-main">
-              {selectedOrder ? (
+              {showForm ? (
+                <div className="order-form-full">
+                  <WorkOrderForm
+                    formData={formData}
+                    machines={machines}
+                    onChange={handleInputChange}
+                    onSubmit={handleSubmit}
+                    onCancel={resetForm}
+                    isEditing={!!editingWorkOrderId}
+                  />
+                </div>
+              ) : selectedOrder ? (
                 <div className="order-detail-card">
                   <div className="order-detail-header">
                     <div>
@@ -311,19 +328,6 @@ export function WorkshopPage() {
                       </span>
                     </div>
                   </div>
-
-                  {showForm && (
-                    <div className="order-form-container">
-                      <WorkOrderForm
-                        formData={formData}
-                        machines={machines}
-                        onChange={handleInputChange}
-                        onSubmit={handleSubmit}
-                        onCancel={resetForm}
-                        isEditing={!!editingWorkOrderId}
-                      />
-                    </div>
-                  )}
                 </div>
               ) : (
                 <div className="order-empty">

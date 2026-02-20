@@ -1,18 +1,39 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
+import * as XLSX from 'xlsx';
 import type { MachineDetails } from '../api/machineApi';
 import { machineApi } from '../api/machineApi';
+import { workOrderApi, type WorkOrderLog } from '../api/workOrderApi';
+import type { WorkOrder } from '../types/workOrder';
+import { LegalDocumentsCard } from '../components/LegalDocumentsCard';
 import './MachineHistoryPage.css';
 
 export function MachineHistoryPage() {
   const { id } = useParams<{ id: string }>();
   const [details, setDetails] = useState<MachineDetails | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'summary' | 'contracts' | 'workshop'>('summary');
+  const [activeTab, setActiveTab] = useState<'summary' | 'contracts' | 'workshop' | 'hourmeter'>('summary');
   const [showHourMeterModal, setShowHourMeterModal] = useState(false);
   const [newHourMeter, setNewHourMeter] = useState('');
   const [updatingHourMeter, setUpdatingHourMeter] = useState(false);
+  const [hourMeterHistory, setHourMeterHistory] = useState<Array<{
+    id: string;
+    previousValue: number;
+    newValue: number;
+    createdAt: string;
+    user: { username: string };
+  }>>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
+  const [loadingWorkOrders, setLoadingWorkOrders] = useState(false);
+  const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrder | null>(null);
+  const [workOrderLogs, setWorkOrderLogs] = useState<WorkOrderLog[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+  const [showLogModal, setShowLogModal] = useState(false);
+  const [newLogDescription, setNewLogDescription] = useState('');
+  const [logFile, setLogFile] = useState<File | null>(null);
+  const [uploadingLog, setUploadingLog] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,6 +41,88 @@ export function MachineHistoryPage() {
       fetchDetails(id);
     }
   }, [id]);
+
+  // Cargar historial de horómetro cuando se selecciona el tab
+  useEffect(() => {
+    if (activeTab === 'hourmeter' && id) {
+      loadHourMeterHistory(id);
+    }
+  }, [activeTab, id]);
+
+  // Cargar órdenes de trabajo cuando se selecciona el tab workshop
+  useEffect(() => {
+    if (activeTab === 'workshop' && id) {
+      loadWorkOrders(id);
+    }
+  }, [activeTab, id]);
+
+  // Cargar logs cuando se selecciona una orden de trabajo
+  useEffect(() => {
+    if (selectedWorkOrder) {
+      loadWorkOrderLogs(selectedWorkOrder.id);
+    }
+  }, [selectedWorkOrder]);
+
+  const loadWorkOrders = async (machineId: string) => {
+    setLoadingWorkOrders(true);
+    try {
+      const orders = await workOrderApi.getAll();
+      const machineOrders = orders.filter(wo => wo.machineId === machineId);
+      setWorkOrders(machineOrders);
+      if (machineOrders.length > 0) {
+        setSelectedWorkOrder(machineOrders[0]);
+      }
+    } catch (error) {
+      console.error('Error loading work orders:', error);
+    } finally {
+      setLoadingWorkOrders(false);
+    }
+  };
+
+  const loadWorkOrderLogs = async (workOrderId: string) => {
+    setLoadingLogs(true);
+    try {
+      const logs = await workOrderApi.getLogs(workOrderId);
+      setWorkOrderLogs(logs);
+    } catch (error) {
+      console.error('Error loading logs:', error);
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
+  const handleAddLog = async () => {
+    if (!selectedWorkOrder || (!newLogDescription && !logFile)) return;
+    
+    setUploadingLog(true);
+    try {
+      if (logFile) {
+        await workOrderApi.uploadLogWithFile(selectedWorkOrder.id, newLogDescription, logFile);
+      } else {
+        await workOrderApi.addLog(selectedWorkOrder.id, newLogDescription);
+      }
+      setNewLogDescription('');
+      setLogFile(null);
+      setShowLogModal(false);
+      loadWorkOrderLogs(selectedWorkOrder.id);
+    } catch (error) {
+      console.error('Error adding log:', error);
+    } finally {
+      setUploadingLog(false);
+    }
+  };
+
+  const loadHourMeterHistory = async (machineId: string) => {
+    setLoadingHistory(true);
+    try {
+      const history = await machineApi.getHourMeterHistory(machineId);
+      setHourMeterHistory(history);
+    } catch (error) {
+      console.error('Error loading hour meter history:', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   const fetchDetails = async (machineId: string) => {
     try {
@@ -57,6 +160,23 @@ export function MachineHistoryPage() {
     }
   };
 
+  const exportToExcel = () => {
+    if (hourMeterHistory.length === 0) return;
+
+    const data = hourMeterHistory.map(log => ({
+      'Fecha': formatDate(log.createdAt),
+      'Usuario': log.user.username,
+      'Valor Anterior (hrs)': log.previousValue,
+      'Nuevo Valor (hrs)': log.newValue,
+      'Diferencia (hrs)': log.newValue - log.previousValue,
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Historial Horómetro');
+    XLSX.writeFile(wb, `historial_horometro_${details?.code || 'machine'}.xlsx`);
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('es-CL', {
       style: 'currency',
@@ -90,12 +210,38 @@ export function MachineHistoryPage() {
 
   return (
     <div className="history-layout">
-      {/* Header */}
+      {/* Header con menú */}
       <header className="history-header">
         <div className="header-brand" onClick={() => navigate('/')}>
           <span className="brand-icon">🏗️</span>
           <span className="brand-text">YellowFleet</span>
         </div>
+        <nav className="header-nav">
+          <button className="nav-link" onClick={() => {
+            localStorage.setItem('YF_PAGE', 'dashboard');
+            navigate('/');
+          }}>
+            Dashboard
+          </button>
+          <button className="nav-link" onClick={() => {
+            localStorage.setItem('YF_PAGE', 'fleet');
+            navigate('/');
+          }}>
+            Flota
+          </button>
+          <button className="nav-link" onClick={() => {
+            localStorage.setItem('YF_PAGE', 'contracts');
+            navigate('/');
+          }}>
+            Contratos
+          </button>
+          <button className="nav-link" onClick={() => {
+            localStorage.setItem('YF_PAGE', 'workshop');
+            navigate('/');
+          }}>
+            Taller
+          </button>
+        </nav>
         <div className="header-machine">
           <span className="machine-code">{details.code}</span>
           <span className={`machine-status ${getStatusBadgeClass(details.status)}`}>
@@ -135,6 +281,9 @@ export function MachineHistoryPage() {
               </button>
               <button className={`tab ${activeTab === 'workshop' ? 'active' : ''}`} onClick={() => setActiveTab('workshop')}>
                 🔧 Taller ({details.workOrders.length})
+              </button>
+              <button className={`tab ${activeTab === 'hourmeter' ? 'active' : ''}`} onClick={() => setActiveTab('hourmeter')}>
+                ⏱️ Horómetro ({hourMeterHistory.length})
               </button>
             </nav>
 
@@ -218,31 +367,128 @@ export function MachineHistoryPage() {
 
               {activeTab === 'workshop' && (
                 <div className="workorders-tab">
-                  {details.workOrders.length === 0 ? (
-                    <div className="empty-state"><span>🔧</span><p>No hay órdenes de trabajo</p></div>
+                  {loadingWorkOrders ? (
+                    <div className="loading-state">Cargando órdenes de trabajo...</div>
+                  ) : workOrders.length === 0 ? (
+                    <div className="empty-state">
+                      <span>🔧</span>
+                      <p>No hay órdenes de trabajo registradas</p>
+                    </div>
                   ) : (
-                    <div className="workorders-list">
-                      {details.workOrders.map((wo) => (
-                        <div key={wo.id} className="workorder-card">
-                          <div className="workorder-header">
-                            <span className={`workorder-type ${wo.type.toLowerCase()}`}>
-                              {wo.type === 'PREVENTIVE' && '🛡️ Preventivo'}
-                              {wo.type === 'CORRECTIVE' && '🔧 Correctivo'}
-                              {wo.type === 'PREDICTIVE' && '📡 Predictivo'}
-                            </span>
-                            <span className={`workorder-status ${wo.status.toLowerCase()}`}>{wo.status}</span>
+                    <div className="workorders-with-logs">
+                      {/* Selector de orden de trabajo */}
+                      <div className="workorder-selector">
+                        <label>Seleccionar Orden de Trabajo:</label>
+                        <select 
+                          value={selectedWorkOrder?.id || ''} 
+                          onChange={(e) => {
+                            const wo = workOrders.find(w => w.id === e.target.value);
+                            setSelectedWorkOrder(wo || null);
+                          }}
+                        >
+                          {workOrders.map((wo) => (
+                            <option key={wo.id} value={wo.id}>
+                              {wo.type} - {formatDate(wo.entryDate)} ({wo.status})
+                            </option>
+                          ))}
+                        </select>
+                        <button className="btn-add-log" onClick={() => setShowLogModal(true)}>
+                          ➕ Agregar Bitácora
+                        </button>
+                      </div>
+
+                      {/* Bitácora */}
+                      <div className="binnacle-section">
+                        <h3>📋 Bitácora de Trabajo</h3>
+                        {loadingLogs ? (
+                          <div className="loading-state">Cargando bitácora...</div>
+                        ) : workOrderLogs.length === 0 ? (
+                          <div className="empty-state">
+                            <span>📝</span>
+                            <p>No hay registros en la bitácora</p>
                           </div>
-                          <div className="workorder-dates">
-                            <span>📥 {formatDate(wo.entryDate)}</span>
-                            {wo.exitDate && <span>📤 {formatDate(wo.exitDate)}</span>}
+                        ) : (
+                          <div className="binnacle-table-wrapper">
+                            <table className="binnacle-table">
+                              <thead>
+                                <tr>
+                                  <th>Fecha</th>
+                                  <th>Descripción</th>
+                                  <th>Archivo</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {workOrderLogs.map((log) => (
+                                  <tr key={log.id}>
+                                    <td>{formatDate(log.date)}</td>
+                                    <td>{log.description || '-'}</td>
+                                    <td>
+                                      {log.fileUrl ? (
+                                        <a 
+                                          href={log.fileUrl} 
+                                          target="_blank" 
+                                          rel="noopener noreferrer"
+                                          className="file-link"
+                                        >
+                                          📎 {log.fileName}
+                                        </a>
+                                      ) : (
+                                        <span className="no-file">-</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
                           </div>
-                          <div className="workorder-costs">
-                            <div className="cost-item"><span>Repuestos:</span><span>{formatCurrency(wo.sparePartsCost)}</span></div>
-                            <div className="cost-item"><span>Mano Obra:</span><span>{formatCurrency(wo.laborCost)}</span></div>
-                            <div className="cost-item total"><span>Total:</span><span>{formatCurrency(wo.totalCost)}</span></div>
-                          </div>
-                        </div>
-                      ))}
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Tab Historial de Horómetro */}
+              {activeTab === 'hourmeter' && (
+                <div className="hourmeter-history-tab">
+                  {loadingHistory ? (
+                    <div className="loading-state">Cargando historial...</div>
+                  ) : hourMeterHistory.length === 0 ? (
+                    <div className="empty-state">
+                      <span>⏱️</span>
+                      <p>No hay registro de actualizaciones de horómetro</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="hourmeter-table-header">
+                        <button className="btn-export-excel" onClick={exportToExcel}>
+                          📥 Exportar Excel
+                        </button>
+                      </div>
+                      <div className="hourmeter-table-wrapper">
+                      <table className="hourmeter-table">
+                        <thead>
+                          <tr>
+                            <th>Fecha</th>
+                            <th>Usuario</th>
+                            <th>Valor Anterior</th>
+                            <th>Nuevo Valor</th>
+                            <th>Diferencia</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {hourMeterHistory.map((log) => (
+                            <tr key={log.id}>
+                              <td>{formatDate(log.createdAt)}</td>
+                              <td>{log.user.username}</td>
+                              <td>{log.previousValue.toLocaleString()} hrs</td>
+                              <td className="new-value">{log.newValue.toLocaleString()} hrs</td>
+                              <td className="diff-value">+{(log.newValue - log.previousValue).toLocaleString()} hrs</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -293,7 +539,7 @@ export function MachineHistoryPage() {
             </button>
           </div>
           <div className="hourmeter-stats">
-            <div className="hourmeter-stat"><span className="label">Vida útil total</span><span className="value">{(details.usefulLifeHours || 10000).toLocaleString()} hrs</span></div>
+            <div className="hourmeter-stat"><span className="label">Vida Útil</span><span className="value">{(details.usefulLifeHours || 10000).toLocaleString()} hrs</span></div>
             <div className="hourmeter-stat">
               <span className="label">Horas restantes</span>
               <span className="value" style={{ color: ((details.usefulLifeHours || 10000) - (details.hourMeter || 0)) < 1000 ? '#dc2626' : '#059669' }}>
@@ -314,6 +560,11 @@ export function MachineHistoryPage() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Documentos Legales */}
+        <div className="legal-documents-section">
+          <LegalDocumentsCard machineId={details.id} />
         </div>
       </main>
 
@@ -350,6 +601,55 @@ export function MachineHistoryPage() {
                 disabled={updatingHourMeter || !newHourMeter || parseFloat(newHourMeter) < (details.hourMeter || 0)}
               >
                 {updatingHourMeter ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para agregar bitácora */}
+      {showLogModal && (
+        <div className="modal-overlay" onClick={() => setShowLogModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>📝 Agregar Registro a Bitácora</h3>
+              <button className="modal-close" onClick={() => setShowLogModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Descripción del trabajo realizado:</label>
+                <textarea 
+                  value={newLogDescription}
+                  onChange={(e) => setNewLogDescription(e.target.value)}
+                  placeholder="Describe el trabajo realizado,repuestos utilizados, observaciones..."
+                  rows={4}
+                />
+              </div>
+              <div className="form-group">
+                <label>Archivo (factura, foto, etc.):</label>
+                <input 
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.gif,.webp"
+                  onChange={(e) => setLogFile(e.target.files?.[0] || null)}
+                />
+                {logFile && (
+                  <div className="selected-file">
+                    📎 {logFile.name}
+                    <button type="button" onClick={() => setLogFile(null)}>×</button>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-cancel" onClick={() => setShowLogModal(false)} disabled={uploadingLog}>
+                Cancelar
+              </button>
+              <button 
+                className="btn-save" 
+                onClick={handleAddLog} 
+                disabled={uploadingLog || (!newLogDescription && !logFile)}
+              >
+                {uploadingLog ? 'Guardando...' : 'Guardar'}
               </button>
             </div>
           </div>

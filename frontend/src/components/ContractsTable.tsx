@@ -6,9 +6,10 @@ interface ContractsTableProps {
   onEdit: (contract: Contract) => void;
   onDelete: (id: string) => void;
   onAssign: (contract: Contract) => void;
+  onViewMachines: (contract: Contract) => void;
 }
 
-export function ContractsTable({ contracts, onEdit, onDelete, onAssign }: ContractsTableProps) {
+export function ContractsTable({ contracts, onEdit, onDelete, onAssign, onViewMachines }: ContractsTableProps) {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('es-CL');
   };
@@ -57,11 +58,18 @@ export function ContractsTable({ contracts, onEdit, onDelete, onAssign }: Contra
               <td>
                 <div className="action-buttons">
                   <button
+                    className="btn-view"
+                    onClick={() => onViewMachines(contract)}
+                    title="Ver Máquinas Asignadas"
+                  >
+                    🏗️
+                  </button>
+                  <button
                     className="btn-assign"
                     onClick={() => onAssign(contract)}
                     title="Asignar Máquina"
                   >
-                    🏗️
+                    ➕
                   </button>
                   <button
                     className="btn-edit"

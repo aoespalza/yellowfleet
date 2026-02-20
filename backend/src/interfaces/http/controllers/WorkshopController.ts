@@ -31,6 +31,18 @@ export class WorkshopController {
         return;
       }
 
+      // Save current machine status as previousStatus before changing to IN_WORKSHOP
+      const machine = await prisma.machine.findUnique({ where: { id: machineId } });
+      if (machine) {
+        await prisma.machine.update({
+          where: { id: machineId },
+          data: { 
+            previousStatus: machine.status as any,
+            status: 'IN_WORKSHOP' as any,
+          },
+        });
+      }
+
       // Convert string to enum
       const workOrderType = WorkOrderType[type as keyof typeof WorkOrderType];
 
@@ -86,10 +98,18 @@ export class WorkshopController {
       // Find the work order to get machineId
       const workOrder = await prisma.workOrder.findUnique({ where: { id } });
       if (workOrder) {
-        // Update machine status back to AVAILABLE
+        // Get machine to restore previous status
+        const machine = await prisma.machine.findUnique({ where: { id: workOrder.machineId } });
+        
+        // Restore previous status if exists, otherwise set to AVAILABLE
+        const newStatus = machine?.previousStatus || 'AVAILABLE';
+        
         await prisma.machine.update({
           where: { id: workOrder.machineId },
-          data: { status: MachineStatus.AVAILABLE },
+          data: { 
+            status: newStatus as any,
+            previousStatus: null,
+          },
         });
       }
 

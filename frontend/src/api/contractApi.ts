@@ -35,4 +35,25 @@ export const contractApi = {
   assignMachine: async (contractId: string, machineId: string, hourlyRate: number): Promise<void> => {
     await api.post(`/contracts/${contractId}/assign`, { machineId, hourlyRate });
   },
+
+  unassignMachine: async (contractId: string, machineId: string): Promise<void> => {
+    await api.delete(`/contracts/${contractId}/assign/${machineId}`);
+  },
+
+  getMachines: async (contractId: string): Promise<Array<{
+    id: string;
+    code: string;
+    brand: string;
+    model: string;
+    serialNumber: string;
+    status: string;
+    hourlyRate: number;
+    workedHours: number;
+    generatedIncome: number;
+    maintenanceCost: number;
+    margin: number;
+  }>> => {
+    const response = await api.get(`/contracts/${contractId}/machines`);
+    return response.data;
+  },
 };

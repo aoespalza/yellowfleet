@@ -4,6 +4,7 @@ import type { Contract, ContractFormData } from '../types/contract';
 import { ContractForm } from '../components/ContractForm';
 import { ContractsTable } from '../components/ContractsTable';
 import { AssignMachineModal } from '../components/AssignMachineModal';
+import { AssignedMachinesModal } from '../components/AssignedMachinesModal';
 import { useAuth } from '../context/AuthContext';
 import './ContractsPage.css';
 
@@ -25,6 +26,7 @@ export function ContractsPage() {
   const [editingContractId, setEditingContractId] = useState<string | null>(null);
   const [formData, setFormData] = useState<ContractFormData>(initialFormData);
   const [assignModal, setAssignModal] = useState<{ contractId: string; contractCode: string } | null>(null);
+  const [assignedMachinesModal, setAssignedMachinesModal] = useState<{ contractId: string; contractCode: string } | null>(null);
 
   const fetchContracts = async () => {
     try {
@@ -144,6 +146,7 @@ export function ContractsPage() {
             onEdit={handleEdit}
             onDelete={handleDelete}
             onAssign={handleAssignMachine}
+            onViewMachines={(contract) => setAssignedMachinesModal({ contractId: contract.id, contractCode: contract.code })}
           />
           {assignModal && (
             <AssignMachineModal
@@ -151,6 +154,14 @@ export function ContractsPage() {
               contractCode={assignModal.contractCode}
               onClose={() => setAssignModal(null)}
               onAssigned={fetchContracts}
+            />
+          )}
+          {assignedMachinesModal && (
+            <AssignedMachinesModal
+              contractId={assignedMachinesModal.contractId}
+              contractCode={assignedMachinesModal.contractCode}
+              onClose={() => setAssignedMachinesModal(null)}
+              onUnassigned={fetchContracts}
             />
           )}
         </>

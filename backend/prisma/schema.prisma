@@ -42,6 +42,26 @@ enum ContractStatus {
   CANCELLED
 }
 
+enum LegalDocumentType {
+  POLIZA
+  SOAT
+  TECNICO_MECANICA
+}
+
+model LegalDocument {
+  id              String            @id @default(uuid())
+  machineId       String
+  type            LegalDocumentType
+  insuranceName   String?
+  policyNumber    String?
+  expirationDate  DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  machine         Machine           @relation(fields: [machineId], references: [id], onDelete: Cascade)
+
+  @@unique([machineId, type])
+}
+
 model Machine {
   id               String        @id @default(uuid())
   code             String        @unique
@@ -58,12 +78,15 @@ model Machine {
   currentLocation  String?
 
   status           MachineStatus
+  previousStatus   MachineStatus?
 
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
   workOrders       WorkOrder[]
   assignments      MachineAssignment[]
+  hourMeterLogs    HourMeterLog[]
+  legalDocuments   LegalDocument[]
 }
 
 
@@ -89,6 +112,9 @@ model WorkOrderLog {
   workOrderId String
   date        DateTime  @default(now())
   description String
+  fileUrl     String?   // URL del archivo subido (factura, foto, etc.)
+  fileName    String?   // Nombre original del archivo
+  fileType    String?   // Tipo MIME del archivo
   createdAt   DateTime  @default(now())
   workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
 }
@@ -132,4 +158,16 @@ model User {
   role      UserRole @default(OPERATOR)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  hourMeterLogs HourMeterLog[]
+}
+
+model HourMeterLog {
+  id         String   @id @default(uuid())
+  machineId  String
+  userId     String
+  previousValue Float
+  newValue   Float
+  createdAt  DateTime @default(now())
+  machine    Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id])
 }

@@ -5,12 +5,16 @@ import ContractsRoutes from './routes/ContractsRoutes';
 import WorkshopRoutes from './routes/WorkshopRoutes';
 import FinanceRoutes from './routes/FinanceRoutes';
 import AuthRoutes from './routes/AuthRoutes';
+import path from 'path';
 
 const app = express();
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
 
 app.use('/api/auth', AuthRoutes);
 app.use('/api', FleetRoutes);

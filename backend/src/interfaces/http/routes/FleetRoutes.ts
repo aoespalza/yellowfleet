@@ -26,6 +26,10 @@ router.get('/machines/:id', (req, res) => fleetController.getById(req, res));
 
 // Rutas protegidas - detalles completos (requieren autenticación)
 router.get('/machines/:id/details', authenticateToken, (req, res) => fleetController.getDetails(req, res));
+router.get('/machines/:id/hourmeter-history', authenticateToken, (req, res) => fleetController.getHourMeterHistory(req, res));
+router.get('/machines/:machineId/legal-documents', authenticateToken, (req, res) => fleetController.getLegalDocuments(req, res));
+router.put('/machines/:machineId/legal-documents', authenticateToken, authorizeRole('ADMIN', 'MANAGER'), (req, res) => fleetController.updateLegalDocuments(req, res));
+router.get('/legal-documents/expiring', authenticateToken, (req, res) => fleetController.getExpiringDocuments(req, res));
 
 // Rutas protegidas (requieren autenticación y rol ADMIN o MANAGER)
 router.post('/machines', authenticateToken, authorizeRole('ADMIN', 'MANAGER'), (req, res) => fleetController.create(req, res));

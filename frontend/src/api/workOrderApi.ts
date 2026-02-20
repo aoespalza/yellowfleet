@@ -4,8 +4,12 @@ import type { WorkOrder } from '../types/workOrder';
 export interface WorkOrderLog {
   id: string;
   workOrderId: string;
+  machineCode?: string;
   date: string;
   description: string;
+  fileUrl?: string;
+  fileName?: string;
+  fileType?: string;
   createdAt: string;
 }
 
@@ -57,6 +61,20 @@ export const workOrderApi = {
 
   addLog: async (workOrderId: string, description: string): Promise<WorkOrderLog> => {
     const response = await api.post(`/workshop/${workOrderId}/logs`, { description });
+    return response.data;
+  },
+
+  // Upload file with log
+  uploadLogWithFile: async (workOrderId: string, description: string, file: File): Promise<WorkOrderLog> => {
+    const formData = new FormData();
+    formData.append('description', description);
+    formData.append('file', file);
+    
+    const response = await api.post(`/workshop/${workOrderId}/logs/upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 

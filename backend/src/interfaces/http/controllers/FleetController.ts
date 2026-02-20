@@ -6,6 +6,7 @@ import { ListMachines } from '../../../application/fleet/ListMachines';
 import { PrismaMachineRepository } from '../../../infrastructure/repositories/PrismaMachineRepository';
 import { MachineStatus } from '../../../domain/fleet/MachineStatus';
 import { UpdateMachine } from '../../../application/fleet/UpdateMachine';
+import prisma from '../../../infrastructure/prisma/prismaClient';
 
 
 const machineRepository = new PrismaMachineRepository();
@@ -108,6 +109,7 @@ export class FleetController {
   public async updateHourMeter(req: Request, res: Response): Promise<void> {
     try {
       const { hourMeter } = req.body;
+      const userId = (req as any).userId;
       
       if (hourMeter === undefined || typeof hourMeter !== 'number') {
         res.status(400).json({ error: 'hourMeter es requerido y debe ser un número' });
@@ -120,7 +122,19 @@ export class FleetController {
         return;
       }
 
+      const previousValue = machine.hourMeter || 0;
+      
       await machineRepository.update(req.params.id, { hourMeter });
+
+      // Guardar trazabilidad del horómetro
+      await prisma.hourMeterLog.create({
+        data: {
+          machineId: req.params.id,
+          userId: userId,
+          previousValue: previousValue,
+          newValue: hourMeter,
+        }
+      });
 
       res.status(200).json({ 
         message: 'Horómetro actualizado',
@@ -397,6 +411,173 @@ export class FleetController {
       res.status(200).json(response);
     } catch (error) {
       console.error('Error fetching public machine details:', error);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      res.status(400).json({ error: message });
+    }
+  }
+
+  public async getHourMeterHistory(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+
+      const logs = await prisma.hourMeterLog.findMany({
+        where: { machineId: id },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: {
+            select: { username: true }
+          }
+        }
+      });
+
+      res.status(200).json(logs);
+    } catch (error) {
+      console.error('Error fetching hour meter history:', error);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      res.status(400).json({ error: message });
+    }
+  }
+
+  public async getLegalDocuments(req: Request, res: Response): Promise<void> {
+    try {
+      const { machineId } = req.params;
+      
+      const documents = await prisma.legalDocument.findMany({
+        where: { machineId },
+      });
+
+      // Return as object with keys for each document type
+      const result = {
+        POLIZA: documents.find(d => d.type === 'POLIZA') || null,
+        SOAT: documents.find(d => d.type === 'SOAT') || null,
+        TECNICO_MECANICA: documents.find(d => d.type === 'TECNICO_MECANICA') || null,
+      };
+
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('Error fetching legal documents:', error);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      res.status(400).json({ error: message });
+    }
+  }
+
+  public async updateLegalDocuments(req: Request, res: Response): Promise<void> {
+    try {
+      const { machineId } = req.params;
+      const { POLIZA, SOAT, TECNICO_MECANICA } = req.body;
+
+      const documentsToUpsert = [
+        { type: 'POLIZA', data: POLIZA },
+        { type: 'SOAT', data: SOAT },
+        { type: 'TECNICO_MECANICA', data: TECNICO_MECANICA },
+      ];
+
+      const results = await Promise.all(
+        documentsToUpsert.map(async ({ type, data }) => {
+          // Si no se proporciona datos, buscar el documento existente
+          if (!data) {
+            return prisma.legalDocument.findUnique({
+              where: {
+                machineId_type: {
+                  machineId,
+                  type: type as any,
+                },
+              },
+            });
+          }
+
+          // Upsert con los datos proporcionados
+          return prisma.legalDocument.upsert({
+            where: {
+              machineId_type: {
+                machineId,
+                type: type as any,
+              },
+            },
+            update: {
+              insuranceName: data.insuranceName || null,
+              policyNumber: data.policyNumber || null,
+              expirationDate: data.expirationDate ? new Date(data.expirationDate) : null,
+            },
+            create: {
+              machineId,
+              type: type as any,
+              insuranceName: data.insuranceName || null,
+              policyNumber: data.policyNumber || null,
+              expirationDate: data.expirationDate ? new Date(data.expirationDate) : null,
+            },
+          });
+        })
+      );
+
+      const result = {
+        POLIZA: results[0],
+        SOAT: results[1],
+        TECNICO_MECANICA: results[2],
+      };
+
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('Error updating legal documents:', error);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      res.status(400).json({ error: message });
+    }
+  }
+
+  public async getExpiringDocuments(req: Request, res: Response): Promise<void> {
+    try {
+      const days = parseInt(req.query.days as string) || 30;
+      const now = new Date();
+      const futureDate = new Date();
+      futureDate.setDate(now.getDate() + days);
+
+      const documents = await prisma.legalDocument.findMany({
+        where: {
+          expirationDate: {
+            gte: now,
+            lte: futureDate,
+          },
+        },
+        include: {
+          machine: {
+            select: {
+              code: true,
+              brand: true,
+              model: true,
+            },
+          },
+        },
+        orderBy: {
+          expirationDate: 'asc',
+        },
+      });
+
+      const result = documents.map(doc => {
+        const expDate = new Date(doc.expirationDate!);
+        const daysRemaining = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        
+        let urgency: 'critical' | 'warning' | 'normal';
+        if (daysRemaining <= 7) urgency = 'critical';
+        else if (daysRemaining <= 15) urgency = 'warning';
+        else urgency = 'normal';
+
+        return {
+          id: doc.id,
+          machineId: doc.machineId,
+          machineCode: doc.machine.code,
+          machineName: `${doc.machine.brand} ${doc.machine.model}`,
+          documentType: doc.type,
+          documentName: doc.type === 'POLIZA' ? 'Póliza de Seguro' : 
+                        doc.type === 'SOAT' ? 'SOAT' : 'Revisión Técnico-Mecánica',
+          expirationDate: doc.expirationDate,
+          daysRemaining,
+          urgency,
+        };
+      });
+
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('Error fetching expiring documents:', error);
       const message = error instanceof Error ? error.message : 'Unknown error';
       res.status(400).json({ error: message });
     }

@@ -1,0 +1,122 @@
+.modal-large {
+  max-width: 700px;
+  width: 95%;
+}
+
+.assigned-machines-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.assigned-machine-card {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.assigned-machine-card .machine-info {
+  margin-bottom: 12px;
+}
+
+.assigned-machine-card .machine-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.assigned-machine-card .machine-code {
+  font-weight: 700;
+  font-size: 16px;
+  color: #1f2937;
+}
+
+.assigned-machine-card .machine-status {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.assigned-machine-card .machine-status.status-available {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.assigned-machine-card .machine-status.status-in_contract {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.assigned-machine-card .machine-status.status-in_workshop {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.assigned-machine-card .machine-details {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.assigned-machine-card .machine-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.assigned-machine-card .stat {
+  text-align: center;
+}
+
+.assigned-machine-card .stat-label {
+  display: block;
+  font-size: 11px;
+  color: #6b7280;
+  margin-bottom: 2px;
+}
+
+.assigned-machine-card .stat-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.assigned-machine-card .btn-unassign {
+  width: 100%;
+  padding: 8px;
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.assigned-machine-card .btn-unassign:hover:not(:disabled) {
+  background: #fecaca;
+}
+
+.assigned-machine-card .btn-unassign:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #6b7280;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: #6b7280;
+  font-size: 14px;
+}

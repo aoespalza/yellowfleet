@@ -13,7 +13,7 @@ import './App.css';
 function AppNavigator() {
   const { user, logout } = useAuth();
   const [currentPage, setCurrentPage] = useState<string>(() => {
-    return localStorage.getItem('YF_PAGE') || 'fleet';
+    return localStorage.getItem('YF_PAGE') || 'dashboard';
   });
 
   // Limpiar el localStorage despues de leer
