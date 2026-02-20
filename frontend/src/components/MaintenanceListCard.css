@@ -1,0 +1,133 @@
+.maintenance-list-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.maintenance-list-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.maintenance-icon {
+  font-size: 24px;
+}
+
+.maintenance-list-header h3 {
+  margin: 0;
+  flex: 1;
+  font-size: 18px;
+  color: #1f2937;
+}
+
+.maintenance-count {
+  background: #f59e0b;
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 12px;
+  min-width: 28px;
+  text-align: center;
+}
+
+.maintenance-list-empty {
+  text-align: center;
+  padding: 30px;
+  color: #6b7280;
+}
+
+.maintenance-list-empty span {
+  font-size: 32px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.maintenance-list-empty p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.maintenance-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.maintenance-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.maintenance-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-color: #d1d5db;
+}
+
+.maintenance-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.maintenance-code {
+  font-weight: 700;
+  color: #1f2937;
+  font-size: 14px;
+}
+
+.maintenance-name {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.maintenance-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 80px;
+}
+
+.maintenance-hours {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+.maintenance-bar {
+  height: 4px;
+  border-radius: 2px;
+  width: 100%;
+  max-width: 80px;
+}
+
+/* Scrollbar */
+.maintenance-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.maintenance-list::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.maintenance-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.maintenance-list::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
