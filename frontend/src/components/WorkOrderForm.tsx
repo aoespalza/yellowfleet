@@ -18,8 +18,8 @@ const statusOptions: { value: WorkOrderStatus; label: string }[] = [
 ];
 
 const typeOptions: { value: WorkOrderType; label: string }[] = [
-  { value: 'PREVENTIVE', label: 'Preventivo' },
   { value: 'CORRECTIVE', label: 'Correctivo' },
+  { value: 'PREVENTIVE', label: 'Preventivo' },
 ];
 
 export function WorkOrderForm({ formData, machines, onChange, onSubmit, onCancel, isEditing }: WorkOrderFormProps) {

@@ -13,6 +13,10 @@ export interface Machine {
   acquisitionDate: null;
   acquisitionValue: null;
   usefulLifeHours: null;
+  // Mantenimiento preventivo
+  hoursSinceLastMaintenance?: number;
+  maintenanceIntervalHours?: number;
+  lastMaintenanceDate?: string;
   status: MachineStatus;
   currentLocation: null;
   createdAt: string;

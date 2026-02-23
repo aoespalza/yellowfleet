@@ -103,7 +103,7 @@ export class PrismaMachineRepository implements IMachineRepository {
     });
   }
 
-  async update(id: string, data: Partial<{ hourMeter: number }>): Promise<void> {
+  async update(id: string, data: Partial<{ hourMeter: number; usefulLifeHours: number }>): Promise<void> {
     await prisma.machine.update({
       where: { id },
       data: {

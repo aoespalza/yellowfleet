@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { workOrderApi } from '../api/workOrderApi';
 import { machineApi } from '../api/machineApi';
 import type { WorkOrder, WorkOrderFormData, WorkOrderType } from '../types/workOrder';
@@ -8,17 +8,28 @@ import { WorkOrderLogs } from '../components/WorkOrderLogs';
 import { useAuth } from '../context/AuthContext';
 import './WorkshopPage.css';
 
+// Función para obtener la fecha local en formato YYYY-MM-DD
+function getLocalDateString(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 const initialFormData: WorkOrderFormData = {
   machineId: '',
-  type: 'PREVENTIVE' as WorkOrderType,
+  type: 'CORRECTIVE' as WorkOrderType,
   status: 'OPEN',
-  entryDate: new Date().toISOString().split('T')[0],
+  entryDate: getLocalDateString(),
   exitDate: '',
   sparePartsCost: 0,
   laborCost: 0,
   totalCost: 0,
   downtimeHours: 0,
 };
+
+type FilterStatus = 'ALL' | 'OPEN' | 'CLOSED';
 
 export function WorkshopPage() {
   const { user } = useAuth();
@@ -29,7 +40,23 @@ export function WorkshopPage() {
   const [editingWorkOrderId, setEditingWorkOrderId] = useState<string | null>(null);
   const [formData, setFormData] = useState<WorkOrderFormData>(initialFormData);
   const [selectedOrder, setSelectedOrder] = useState<WorkOrder | null>(null);
-  const [activeOrders, setActiveOrders] = useState<WorkOrder[]>([]);
+  
+  // Modal de cierre de orden
+  const [showCloseModal, setShowCloseModal] = useState(false);
+  const [closingOrderId, setClosingOrderId] = useState<string | null>(null);
+  const [closingMachineId, setClosingMachineId] = useState<string | null>(null);
+  const [exitDateTime, setExitDateTime] = useState('');
+  const [sparePartsCost, setSparePartsCost] = useState(0);
+  const [laborCost, setLaborCost] = useState(0);
+  const [uploadInvoices, setUploadInvoices] = useState(false);
+  
+  // Reset de vida útil al cerrar orden (solo para preventivos)
+  const [closingOrderType, setClosingOrderType] = useState<'PREVENTIVE' | 'CORRECTIVE' | null>(null);
+  const [newUsefulLifeHours, setNewUsefulLifeHours] = useState<number>(10000);
+  
+  // Filtros
+  const [searchMachine, setSearchMachine] = useState('');
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>('ALL');
 
   const fetchData = async () => {
     try {
@@ -49,12 +76,6 @@ export function WorkshopPage() {
       
       setWorkOrders(workOrdersWithMachineCode);
       setMachines(machinesData);
-      
-      // Órdenes activas (OPEN o IN_PROGRESS)
-      const active = workOrdersWithMachineCode.filter(
-        (wo) => wo.status === 'OPEN' || wo.status === 'IN_PROGRESS'
-      );
-      setActiveOrders(active);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -65,6 +86,31 @@ export function WorkshopPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const getMachineCode = (machineId: string) => {
+    const machine = machines.find((m) => m.id === machineId);
+    return machine ? machine.code : machineId;
+  };
+
+  const filteredOrders = useMemo(() => {
+    return workOrders.filter((wo) => {
+      const machineCode = getMachineCode(wo.machineId).toLowerCase();
+      const searchLower = searchMachine.toLowerCase();
+      const matchesSearch = machineCode.includes(searchLower);
+      
+      const isOpen = wo.status === 'OPEN' || wo.status === 'IN_PROGRESS' || wo.status === 'WAITING_PARTS';
+      const isClosed = wo.status === 'COMPLETED' || wo.status === 'CANCELLED';
+      
+      let matchesStatus = true;
+      if (filterStatus === 'OPEN') {
+        matchesStatus = isOpen;
+      } else if (filterStatus === 'CLOSED') {
+        matchesStatus = isClosed;
+      }
+      
+      return matchesSearch && matchesStatus;
+    });
+  }, [workOrders, searchMachine, filterStatus]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -84,7 +130,7 @@ export function WorkshopPage() {
       const payload = {
         machineId: formData.machineId,
         type: formData.type as 'PREVENTIVE' | 'CORRECTIVE' | 'PREDICTIVE',
-        entryDate: new Date(formData.entryDate),
+        entryDate: formData.entryDate ? new Date(formData.entryDate) : new Date(),
         sparePartsCost: Number(formData.sparePartsCost),
         laborCost: Number(formData.laborCost),
       };
@@ -123,21 +169,105 @@ export function WorkshopPage() {
 
   const handleStatusChange = async (id: string, newStatus: string) => {
     try {
-      // Si el nuevo estado es COMPLETED, usar close en lugar de updateStatus
+      // Si el nuevo estado es COMPLETED, abrir modal para seleccionar fecha/hora
       if (newStatus === 'COMPLETED') {
-        const exitDate = new Date().toISOString().split('T')[0];
-        await workOrderApi.close(id, new Date(exitDate));
+        setClosingOrderId(id);
+        // Por defecto, proponer la fecha/hora actual
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        setExitDateTime(now.toISOString().slice(0, 16));
+        
+        // Cargar valores actuales de la orden
+        const order = workOrders.find(wo => wo.id === id);
+        if (order) {
+          setSparePartsCost(order.sparePartsCost || 0);
+          setLaborCost(order.laborCost || 0);
+          setClosingMachineId(order.machineId);
+          setClosingOrderType(order.type as 'PREVENTIVE' | 'CORRECTIVE');
+          
+          // Cargar horas de vida útil actual de la máquina (solo para preventivos)
+          if (order.type === 'PREVENTIVE') {
+            const machine = machines.find(m => m.id === order.machineId);
+            if (machine?.usefulLifeHours) {
+              setNewUsefulLifeHours(machine.usefulLifeHours);
+            } else {
+              setNewUsefulLifeHours(10000);
+            }
+          }
+        }
+        
+        setShowCloseModal(true);
       } else {
         await workOrderApi.updateStatus(id, newStatus);
-      }
-      fetchData();
-      if (selectedOrder?.id === id) {
-        const updated = workOrders.find((wo) => wo.id === id);
-        if (updated) setSelectedOrder({ ...updated, status: newStatus as any });
+        fetchData();
+        if (selectedOrder?.id === id) {
+          const updated = workOrders.find((wo) => wo.id === id);
+          if (updated) setSelectedOrder({ ...updated, status: newStatus as any });
+        }
       }
     } catch (error) {
       console.error('Error updating status:', error);
     }
+  };
+
+  const handleCloseOrder = async () => {
+    if (!closingOrderId || !exitDateTime) return;
+    
+    // Si tiene facturas por cargar,avisar y no cerrar
+    if (uploadInvoices) {
+      alert('Por favor, primero carga las facturas en la bitácora de la orden (usa el botón "Agregar Nota" o "Subir Archivo") y luego cierra la orden.');
+      return;
+    }
+    
+    // Validar que se ingresen las horas de vida útil para preventivos
+    if (closingOrderType === 'PREVENTIVE' && (!newUsefulLifeHours || newUsefulLifeHours <= 0)) {
+      alert('Para mantenimientos preventivos es obligatorio ingresar las nuevas horas de vida útil.');
+      return;
+    }
+    
+    try {
+      const exitDate = new Date(exitDateTime);
+      await workOrderApi.close(closingOrderId, exitDate, sparePartsCost, laborCost);
+      
+      // Reset de vida útil es obligatorio para preventivos
+      if (closingOrderType === 'PREVENTIVE' && closingMachineId && newUsefulLifeHours > 0) {
+        try {
+          await machineApi.resetUsefulLifeHours(closingMachineId, newUsefulLifeHours);
+        } catch (resetError) {
+          console.error('Error resetting useful life hours:', resetError);
+          // No bloqueamos el cierre por error en el reset
+        }
+      }
+      
+      setShowCloseModal(false);
+      setClosingOrderId(null);
+      setClosingMachineId(null);
+      setClosingOrderType(null);
+      setExitDateTime('');
+      setSparePartsCost(0);
+      setLaborCost(0);
+      setUploadInvoices(false);
+      setNewUsefulLifeHours(10000);
+      fetchData();
+      if (selectedOrder?.id === closingOrderId) {
+        const updated = workOrders.find((wo) => wo.id === closingOrderId);
+        if (updated) setSelectedOrder({ ...updated, status: 'COMPLETED' as any });
+      }
+    } catch (error) {
+      console.error('Error closing work order:', error);
+    }
+  };
+
+  const handleCancelClose = () => {
+    setShowCloseModal(false);
+    setClosingOrderId(null);
+    setClosingMachineId(null);
+    setClosingOrderType(null);
+    setExitDateTime('');
+    setSparePartsCost(0);
+    setLaborCost(0);
+    setUploadInvoices(false);
+    setNewUsefulLifeHours(10000);
   };
 
   const handleDelete = async (id: string) => {
@@ -159,11 +289,6 @@ export function WorkshopPage() {
     setFormData(initialFormData);
     setEditingWorkOrderId(null);
     setShowForm(false);
-  };
-
-  const getMachineCode = (machineId: string) => {
-    const machine = machines.find((m) => m.id === machineId);
-    return machine ? machine.code : machineId;
   };
 
   const getStatusLabel = (status: string) => {
@@ -339,15 +464,47 @@ export function WorkshopPage() {
 
             {/* Panel derecho: Órdenes activas (25%) */}
             <div className="workshop-sidebar">
+              <div className="filters-card">
+                <h3>Buscar Ordenes</h3>
+                
+                <div className="filter-group">
+                  <label>Por Máquina</label>
+                  <input
+                    type="text"
+                    placeholder="Código de máquina..."
+                    value={searchMachine}
+                    onChange={(e) => setSearchMachine(e.target.value)}
+                    className="filter-input"
+                  />
+                </div>
+                
+                <div className="filter-group">
+                  <label>Estado</label>
+                  <select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
+                    className="filter-select"
+                  >
+                    <option value="ALL">Todas</option>
+                    <option value="OPEN">Abiertas</option>
+                    <option value="CLOSED">Cerradas</option>
+                  </select>
+                </div>
+                
+                <div className="filter-results">
+                  {filteredOrders.length} orden(es) encontrada(s)
+                </div>
+              </div>
+              
               <div className="active-orders-card">
-                <h3>Órdenes Activas</h3>
-                <span className="active-count">{activeOrders.length}</span>
+                <h3>Órdenes de Trabajo</h3>
+                <span className="active-count">{filteredOrders.length}</span>
                 
                 <div className="active-orders-list">
-                  {activeOrders.length === 0 ? (
-                    <p className="no-orders">No hay órdenes activas</p>
+                  {filteredOrders.length === 0 ? (
+                    <p className="no-orders">No se encontraron órdenes</p>
                   ) : (
-                    activeOrders.map((order) => (
+                    filteredOrders.map((order) => (
                       <div
                         key={order.id}
                         className={`active-order-item ${selectedOrder?.id === order.id ? 'active-order-item--selected' : ''}`}
@@ -356,7 +513,7 @@ export function WorkshopPage() {
                         <div className="active-order-header">
                           <span className="active-order-machine">{getMachineCode(order.machineId)}</span>
                           <span className={`active-order-status ${getStatusClass(order.status)}`}>
-                            {order.status === 'OPEN' ? '🆕' : '⚙️'}
+                            {order.status === 'OPEN' ? '🆕' : order.status === 'COMPLETED' ? '✅' : order.status === 'CANCELLED' ? '❌' : '⚙️'}
                           </span>
                         </div>
                         <div className="active-order-type">{getTypeLabel(order.type)}</div>
@@ -380,10 +537,101 @@ export function WorkshopPage() {
               />
             </div>
           )}
+
+          {/* Modal para cerrar orden */}
+          {showCloseModal && (
+            <div className="modal-overlay" onClick={handleCancelClose}>
+              <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                <h2>Cerrar Orden de Trabajo</h2>
+                <p>Ingrese los datos del cierre:</p>
+                
+                <div className="form-group">
+                  <label>Fecha y Hora de Salida</label>
+                  <input
+                    type="datetime-local"
+                    value={exitDateTime}
+                    onChange={(e) => setExitDateTime(e.target.value)}
+                    className="form-input"
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Valor Repuestos ($)</label>
+                  <input
+                    type="number"
+                    value={sparePartsCost}
+                    onChange={(e) => setSparePartsCost(Number(e.target.value))}
+                    className="form-input"
+                    placeholder="0"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Valor Mano de Obra ($)</label>
+                  <input
+                    type="number"
+                    value={laborCost}
+                    onChange={(e) => setLaborCost(Number(e.target.value))}
+                    className="form-input"
+                    placeholder="0"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={uploadInvoices}
+                      onChange={(e) => setUploadInvoices(e.target.checked)}
+                    />
+                    <span>Si tienes facturas por cargar, hazlo primero antes de cerrar el caso</span>
+                  </label>
+                </div>
+
+                {/* Sección de Reset de Vida Útil - SOLO para preventivos (OBLIGATORIO) */}
+                {closingOrderType === 'PREVENTIVE' && (
+                  <div className="form-group reset-useful-life-section">
+                    <div className="reset-mandatory-notice">
+                      <span className="notice-icon">🔄</span>
+                      <span>El mantenimiento preventivo requiere actualizar las horas de vida útil</span>
+                    </div>
+                    <div className="reset-useful-life-input">
+                      <label>Nuevas horas de vida útil:</label>
+                      <input
+                        type="number"
+                        value={newUsefulLifeHours}
+                        onChange={(e) => setNewUsefulLifeHours(Number(e.target.value))}
+                        className="form-input"
+                        placeholder="10000"
+                        min="0"
+                        step="100"
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                <div className="modal-actions">
+                  <button className="btn-cancel" onClick={handleCancelClose}>
+                    Cancelar
+                  </button>
+                  <button 
+                    className="btn-primary" 
+                    onClick={handleCloseOrder}
+                    disabled={closingOrderType === 'PREVENTIVE' && (!newUsefulLifeHours || newUsefulLifeHours <= 0)}
+                    title={closingOrderType === 'PREVENTIVE' && (!newUsefulLifeHours || newUsefulLifeHours <= 0) ? 'Debe ingresar las nuevas horas de vida útil' : ''}
+                  >
+                    Cerrar Orden
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
   );
 }
-
-export default WorkshopPage;

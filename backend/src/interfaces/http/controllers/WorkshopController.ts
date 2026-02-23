@@ -17,6 +17,8 @@ export class WorkshopController {
   public async create(req: Request, res: Response): Promise<void> {
     try {
       const { machineId, type, entryDate, sparePartsCost, laborCost } = req.body;
+      
+      console.log('[WorkshopController] Received data:', { machineId, type, entryDate, sparePartsCost, laborCost });
 
       // Check if machine already has an active work order
       const activeWorkOrders = await prisma.workOrder.findMany({
@@ -46,11 +48,19 @@ export class WorkshopController {
       // Convert string to enum
       const workOrderType = WorkOrderType[type as keyof typeof WorkOrderType];
 
+      // Parse date as local time (not UTC)
+      const parseLocalDate = (dateStr: string): Date => {
+        // Handle both formats: "2026-02-23" and "2026-02-23T00:00:00.000Z"
+        const datePart = dateStr.split('T')[0];
+        const [year, month, day] = datePart.split('-').map(Number);
+        return new Date(year, month - 1, day);
+      };
+
       const createWorkOrder = new CreateWorkOrder(workOrderRepository);
       await createWorkOrder.execute({
         machineId,
         type: workOrderType,
-        entryDate: new Date(entryDate),
+        entryDate: parseLocalDate(entryDate),
         sparePartsCost: Number(sparePartsCost),
         laborCost: Number(laborCost),
       });
@@ -91,9 +101,9 @@ export class WorkshopController {
   public async close(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const { exitDate } = req.body;
+      const { exitDate, sparePartsCost = 0, laborCost = 0 } = req.body;
       const closeWorkOrder = new CloseWorkOrder(workOrderRepository);
-      await closeWorkOrder.execute(id, new Date(exitDate));
+      await closeWorkOrder.execute(id, new Date(exitDate), sparePartsCost, laborCost);
 
       // Find the work order to get machineId
       const workOrder = await prisma.workOrder.findUnique({ where: { id } });
@@ -104,12 +114,21 @@ export class WorkshopController {
         // Restore previous status if exists, otherwise set to AVAILABLE
         const newStatus = machine?.previousStatus || 'AVAILABLE';
         
+        // Si es mantenimiento preventivo, reiniciar horas de mantenimiento
+        const orderType = String(workOrder.type);
+        const updateData: any = { 
+          status: newStatus,
+          previousStatus: null,
+        };
+        
+        if (orderType === 'PREVENTIVE') {
+          updateData.hoursSinceLastMaintenance = 0;
+          updateData.lastMaintenanceDate = new Date(exitDate);
+        }
+        
         await prisma.machine.update({
           where: { id: workOrder.machineId },
-          data: { 
-            status: newStatus as any,
-            previousStatus: null,
-          },
+          data: updateData,
         });
       }
 

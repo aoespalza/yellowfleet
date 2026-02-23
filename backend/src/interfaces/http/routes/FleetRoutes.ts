@@ -34,6 +34,7 @@ router.get('/legal-documents/expiring', authenticateToken, (req, res) => fleetCo
 // Rutas protegidas (requieren autenticación y rol ADMIN o MANAGER)
 router.post('/machines', authenticateToken, authorizeRole('ADMIN', 'MANAGER'), (req, res) => fleetController.create(req, res));
 router.patch('/machines/:id/hourmeter', authenticateToken, authorizeRole('ADMIN', 'MANAGER'), (req, res) => fleetController.updateHourMeter(req, res));
+router.patch('/machines/:id/useful-life', authenticateToken, authorizeRole('ADMIN', 'MANAGER'), (req, res) => fleetController.resetUsefulLifeHours(req, res));
 router.patch('/machines/:id/status', authenticateToken, authorizeRole('ADMIN', 'MANAGER'), (req, res) => fleetController.changeStatus(req, res));
 router.put('/machines/:id', authenticateToken, authorizeRole('ADMIN', 'MANAGER'), (req, res) => fleetController.update(req, res));
 router.delete('/machines/:id', authenticateToken, authorizeRole('ADMIN', 'MANAGER'), (req, res) => fleetController.delete(req, res));

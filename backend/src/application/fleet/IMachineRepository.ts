@@ -7,5 +7,5 @@ export interface IMachineRepository {
   findAll(): Promise<Machine[]>;
   delete(id: string): Promise<void>;
   updateStatus(id: string, status: MachineStatus): Promise<void>;
-  update(id: string, data: Partial<{ hourMeter: number }>): Promise<void>;
+  update(id: string, data: Partial<{ hourMeter: number; usefulLifeHours: number }>): Promise<void>;
 }

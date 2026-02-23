@@ -11,6 +11,12 @@ import prisma from '../../../infrastructure/prisma/prismaClient';
 
 const machineRepository = new PrismaMachineRepository();
 
+// Función helper para parsear fechas en hora local
+function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
 export class FleetController {
   public async create(req: Request, res: Response): Promise<void> {
     try {
@@ -230,6 +236,29 @@ export class FleetController {
       const totalWorkshopCost = workOrders.reduce((sum, w) => sum + w.totalCost, 0);
       const totalDowntimeHours = workOrders.reduce((sum, w) => sum + (w.downtimeHours || 0), 0);
 
+      // Calculate days-based metrics
+      // Total contract days (sum of all contract durations)
+      const totalContractDays = allAssignments.reduce((sum, a) => {
+        const start = new Date(a.contract.startDate).getTime();
+        const end = new Date(a.contract.endDate).getTime();
+        const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+        return sum + Math.max(0, days);
+      }, 0);
+
+      // Productive days = total contract days - downtime days (1 day = 24 hours)
+      const totalDowntimeDays = totalDowntimeHours / 24;
+      const productiveDays = Math.max(0, totalContractDays - totalDowntimeDays);
+
+      // Productivity percentage
+      const productivityPercentage = totalContractDays > 0 
+        ? (productiveDays / totalContractDays) * 100 
+        : 0;
+
+      // Daily rates (per productive day)
+      const dailyIncome = productiveDays > 0 ? totalIncome / productiveDays : 0;
+      const dailyCost = productiveDays > 0 ? (totalMaintenance + totalWorkshopCost) / productiveDays : 0;
+      const dailyMargin = dailyIncome - dailyCost;
+
       // Total maintenance cost including workshop costs
       const totalMaintenanceCost = totalMaintenance + totalWorkshopCost;
 
@@ -276,6 +305,13 @@ export class FleetController {
           totalIncome,
           totalMaintenanceCost,
           totalMargin: totalMarginWithWorkshop,
+          // Days-based metrics
+          totalContractDays,
+          productiveDays,
+          productivityPercentage,
+          dailyIncome,
+          dailyCost,
+          dailyMargin,
         },
 
         // Work orders
@@ -360,6 +396,25 @@ export class FleetController {
       const totalWorkshopCost = workOrders.reduce((sum, w) => sum + w.totalCost, 0);
       const totalDowntimeHours = workOrders.reduce((sum, w) => sum + (w.downtimeHours || 0), 0);
 
+      // Calculate days-based metrics
+      const totalContractDays = assignments.reduce((sum, a) => {
+        const start = new Date(a.contract.startDate).getTime();
+        const end = new Date(a.contract.endDate).getTime();
+        const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+        return sum + Math.max(0, days);
+      }, 0);
+
+      const totalDowntimeDays = totalDowntimeHours / 24;
+      const productiveDays = Math.max(0, totalContractDays - totalDowntimeDays);
+
+      const productivityPercentage = totalContractDays > 0 
+        ? (productiveDays / totalContractDays) * 100 
+        : 0;
+
+      const dailyIncome = productiveDays > 0 ? totalIncome / productiveDays : 0;
+      const dailyCost = productiveDays > 0 ? (totalMaintenance + totalWorkshopCost) / productiveDays : 0;
+      const dailyMargin = dailyIncome - dailyCost;
+
       // Contracts summary
       const contracts = assignments.map((a) => ({
         contractId: a.contractId,
@@ -405,6 +460,13 @@ export class FleetController {
           totalIncome,
           totalMaintenanceCost: totalMaintenance + totalWorkshopCost,
           totalMargin: totalIncome - (totalMaintenance + totalWorkshopCost),
+          // Days-based metrics
+          totalContractDays,
+          productiveDays,
+          productivityPercentage,
+          dailyIncome,
+          dailyCost,
+          dailyMargin,
         },
         
         workshopSummary: {
@@ -526,6 +588,51 @@ export class FleetController {
       res.status(200).json(result);
     } catch (error) {
       console.error('Error updating legal documents:', error);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      res.status(400).json({ error: message });
+    }
+  }
+
+  public async resetUsefulLifeHours(req: Request, res: Response): Promise<void> {
+    try {
+      const { usefulLifeHours } = req.body;
+      const userId = (req as any).userId;
+
+      if (usefulLifeHours === undefined || typeof usefulLifeHours !== 'number' || usefulLifeHours <= 0) {
+        res.status(400).json({ error: 'usefulLifeHours es requerido y debe ser un número positivo' });
+        return;
+      }
+
+      const machine = await machineRepository.findById(req.params.id);
+      if (!machine) {
+        res.status(404).json({ error: 'Máquina no encontrada' });
+        return;
+      }
+
+      const previousUsefulLife = machine.usefulLifeHours || 0;
+
+      await machineRepository.update(req.params.id, { usefulLifeHours });
+
+      // Registrar en bitácora del horómetro el cambio de vida útil
+      const currentHourMeter = machine.hourMeter || 0;
+      await prisma.hourMeterLog.create({
+        data: {
+          machineId: req.params.id,
+          userId: userId,
+          previousValue: previousUsefulLife,
+          newValue: usefulLifeHours,
+        }
+      });
+
+      res.status(200).json({
+        message: 'Horas de vida útil reseteadas',
+        previousUsefulLifeHours: previousUsefulLife,
+        newUsefulLifeHours: usefulLifeHours,
+        currentHourMeter: currentHourMeter,
+        hoursRemaining: usefulLifeHours - currentHourMeter,
+      });
+    } catch (error) {
+      console.error('Error resetting useful life hours:', error);
       const message = error instanceof Error ? error.message : 'Unknown error';
       res.status(400).json({ error: message });
     }

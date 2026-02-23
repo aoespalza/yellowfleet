@@ -34,6 +34,12 @@ export function MachineHistoryPage() {
   const [newLogDescription, setNewLogDescription] = useState('');
   const [logFile, setLogFile] = useState<File | null>(null);
   const [uploadingLog, setUploadingLog] = useState(false);
+  
+  // Estado para reset de vida útil
+  const [showResetUsefulLifeModal, setShowResetUsefulLifeModal] = useState(false);
+  const [newUsefulLifeHours, setNewUsefulLifeHours] = useState('');
+  const [resettingUsefulLife, setResettingUsefulLife] = useState(false);
+  
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -157,6 +163,27 @@ export function MachineHistoryPage() {
       alert('Error al actualizar el horómetro');
     } finally {
       setUpdatingHourMeter(false);
+    }
+  };
+
+  const handleResetUsefulLifeHours = async () => {
+    if (!details) return;
+    
+    const usefulLifeHours = parseFloat(newUsefulLifeHours.replace(/,/g, ''));
+    if (isNaN(usefulLifeHours) || usefulLifeHours <= 0) return;
+    
+    setResettingUsefulLife(true);
+    try {
+      const result = await machineApi.resetUsefulLifeHours(details!.id, usefulLifeHours);
+      setDetails(prev => prev ? ({ ...prev, usefulLifeHours: result.newUsefulLifeHours }) : null);
+      setShowResetUsefulLifeModal(false);
+      setNewUsefulLifeHours('');
+      alert(`Horas de vida útil reseteadas de ${result.previousUsefulLifeHours.toLocaleString()} a ${result.newUsefulLifeHours.toLocaleString()} hrs`);
+    } catch (error) {
+      console.error('Error resetting useful life hours:', error);
+      alert('Error al resetear las horas de vida útil');
+    } finally {
+      setResettingUsefulLife(false);
     }
   };
 
@@ -291,21 +318,41 @@ export function MachineHistoryPage() {
             <div className="tab-content">
               {activeTab === 'summary' && (
                 <div className="summary-tab">
+                  {/* First row: Days and Income */}
                   <div className="kpi-row">
                     <div className="kpi-card">
-                      <span className="kpi-icon">⏱️</span>
-                      <span className="kpi-value">{details.profitability.totalWorkedHours.toLocaleString()}</span>
-                      <span className="kpi-label">Horas Trabajadas</span>
+                      <span className="kpi-icon">📅</span>
+                      <span className="kpi-value">{details.profitability.totalContractDays?.toLocaleString() || 0}</span>
+                      <span className="kpi-label">Días Contrato</span>
+                    </div>
+                    <div className="kpi-card">
+                      <span className="kpi-icon">✅</span>
+                      <span className="kpi-value">{details.profitability.productiveDays?.toLocaleString() || 0}</span>
+                      <span className="kpi-label">Días Productivos</span>
                     </div>
                     <div className="kpi-card kpi-income">
-                      <span className="kpi-icon">💵</span>
-                      <span className="kpi-value">{formatCurrency(details.profitability.totalIncome)}</span>
-                      <span className="kpi-label">Ingresos Totales</span>
+                      <span className="kpi-icon">💰</span>
+                      <span className="kpi-value">{formatCurrency(details.profitability.dailyIncome || 0)}</span>
+                      <span className="kpi-label">Ingreso/Día</span>
                     </div>
+                    <div className="kpi-card">
+                      <span className="kpi-icon">📊</span>
+                      <span className="kpi-value">{details.profitability.productivityPercentage?.toFixed(1) || 0}%</span>
+                      <span className="kpi-label">Productividad</span>
+                    </div>
+                  </div>
+
+                  {/* Second row: Costs and Margin */}
+                  <div className="kpi-row">
                     <div className="kpi-card kpi-expense">
                       <span className="kpi-icon">🔧</span>
                       <span className="kpi-value">{formatCurrency(details.profitability.totalMaintenanceCost)}</span>
                       <span className="kpi-label">Costos Mantenimiento</span>
+                    </div>
+                    <div className="kpi-card kpi-expense">
+                      <span className="kpi-icon">💸</span>
+                      <span className="kpi-value">{formatCurrency(details.profitability.dailyCost || 0)}</span>
+                      <span className="kpi-label">Costo/Día</span>
                     </div>
                     <div className={`kpi-card ${details.profitability.totalMargin >= 0 ? 'kpi-profit' : 'kpi-loss'}`}>
                       <span className="kpi-icon">📈</span>
@@ -518,9 +565,18 @@ export function MachineHistoryPage() {
             <div className="sidebar-section">
               <h3>💰 Rentabilidad</h3>
               <div className="sidebar-card profitability">
-                <div className="profit-row"><span>Ingresos</span><span className="income">{formatCurrency(details.profitability.totalIncome)}</span></div>
-                <div className="profit-row"><span>Costos</span><span className="expense">{formatCurrency(details.profitability.totalMaintenanceCost)}</span></div>
-                <div className="profit-row total"><span>Margen</span><span className={details.profitability.totalMargin >= 0 ? 'income' : 'expense'}>{formatCurrency(details.profitability.totalMargin)}</span></div>
+                {/* Days and Income per day */}
+                <div className="profit-row"><span>Días Contrato</span><span>{details.profitability.totalContractDays?.toLocaleString() || 0}</span></div>
+                <div className="profit-row"><span>Días Productivos</span><span>{details.profitability.productiveDays?.toLocaleString() || 0}</span></div>
+                <div className="profit-row"><span>Ingreso/Día</span><span className="income">{formatCurrency(details.profitability.dailyIncome || 0)}</span></div>
+                <div className="profit-row"><span>Productividad</span><span className={(details.profitability.productivityPercentage || 0) >= 70 ? 'income' : (details.profitability.productivityPercentage || 0) >= 40 ? 'warning' : 'expense'}>{(details.profitability.productivityPercentage || 0).toFixed(1)}%</span></div>
+                
+                <div className="profit-divider"></div>
+                
+                {/* Costs and margin */}
+                <div className="profit-row"><span>Costos Mantenimiento</span><span className="expense">{formatCurrency(details.profitability.totalMaintenanceCost)}</span></div>
+                <div className="profit-row"><span>Costo/Día</span><span className="expense">{formatCurrency(details.profitability.dailyCost || 0)}</span></div>
+                <div className="profit-row total"><span>Margen Total</span><span className={details.profitability.totalMargin >= 0 ? 'income' : 'expense'}>{formatCurrency(details.profitability.totalMargin)}</span></div>
               </div>
             </div>
           </aside>
@@ -559,6 +615,16 @@ export function MachineHistoryPage() {
                 <span className="value">{(details.hourMeter + 250).toLocaleString()} hrs</span>
               </div>
             </div>
+            <button 
+              className="btn-reset-useful-life"
+              onClick={() => {
+                setNewUsefulLifeHours((details.usefulLifeHours || 10000).toString());
+                setShowResetUsefulLifeModal(true);
+              }}
+              title="Resetear horas de vida útil (mantenimiento mayor)"
+            >
+              🔄 Reset Vida Útil
+            </button>
           </div>
         </div>
 
@@ -650,6 +716,49 @@ export function MachineHistoryPage() {
                 disabled={uploadingLog || (!newLogDescription && !logFile)}
               >
                 {uploadingLog ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para resetear horas de vida útil */}
+      {showResetUsefulLifeModal && (
+        <div className="modal-overlay" onClick={() => setShowResetUsefulLifeModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <h3>🔄 Resetear Horas de Vida Útil</h3>
+            <p className="modal-subtitle">{details.code} - {details.brand} {details.model}</p>
+            <div className="modal-warning">
+              <span>⚠️</span>
+              <p>Esta acción se usa cuando se realiza un mantenimiento mayor (cambio de motor, transmisión, etc.) y la maquinaria adquiere una nueva vida útil.</p>
+            </div>
+            <div className="form-group">
+              <label>Horas de vida útil actuales:</label>
+              <div className="current-value">{(details.usefulLifeHours || 10000).toLocaleString()} hrs</div>
+            </div>
+            <div className="form-group">
+              <label>Nuevas horas de vida útil:</label>
+              <input 
+                type="number" 
+                value={newUsefulLifeHours} 
+                onChange={(e) => setNewUsefulLifeHours(e.target.value)} 
+                placeholder="10000" 
+                autoFocus 
+              />
+              <div className="hours-remaining-preview">
+                Horas restantes después del reset: {Math.max(0, (parseFloat(newUsefulLifeHours) || 0) - (details.hourMeter || 0)).toLocaleString()} hrs
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button className="btn-cancel" onClick={() => setShowResetUsefulLifeModal(false)} disabled={resettingUsefulLife}>
+                Cancelar
+              </button>
+              <button 
+                className="btn-save" 
+                onClick={handleResetUsefulLifeHours} 
+                disabled={resettingUsefulLife || !newUsefulLifeHours || parseFloat(newUsefulLifeHours) <= 0}
+              >
+                {resettingUsefulLife ? 'Guardando...' : 'Confirmar Reset'}
               </button>
             </div>
           </div>

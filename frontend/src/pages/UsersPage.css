@@ -202,3 +202,82 @@
   padding: 40px;
   color: #6b7280;
 }
+
+/* Roles Section */
+.roles-section {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.roles-section .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.roles-section h2 {
+  margin: 0;
+  font-size: 20px;
+  color: #1f2937;
+}
+
+.roles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.role-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.role-card .role-header {
+  margin-bottom: 12px;
+}
+
+.role-card h3 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  color: #1f2937;
+}
+
+.role-desc {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.role-permissions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.perm-badge {
+  background: #e0e7ff;
+  color: #3730a3;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.btn-edit-role {
+  width: 100%;
+  padding: 8px;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  color: #4b5563;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btn-edit-role:hover {
+  background: #e5e7eb;
+}

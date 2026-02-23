@@ -1,14 +1,20 @@
 import { useState, useEffect } from 'react';
 import type { AuthUser } from '../api/authApi';
 import { authApi } from '../api/authApi';
+import { RoleForm } from '../components/RoleForm';
+import type { Role } from '../api/roleApi';
+import { roleApi } from '../api/roleApi';
 import { useAuth } from '../context/AuthContext';
 import './UsersPage.css';
 
 export function UsersPage() {
   const [users, setUsers] = useState<AuthUser[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showRoleForm, setShowRoleForm] = useState(false);
   const [editingUser, setEditingUser] = useState<AuthUser | null>(null);
+  const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -21,6 +27,7 @@ export function UsersPage() {
 
   useEffect(() => {
     fetchUsers();
+    fetchRoles();
   }, []);
 
   const fetchUsers = async () => {
@@ -32,6 +39,21 @@ export function UsersPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchRoles = async () => {
+    try {
+      const data = await roleApi.getAll();
+      setRoles(data);
+    } catch (err) {
+      console.error('Error fetching roles:', err);
+    }
+  };
+
+  const handleSaveRole = () => {
+    setShowRoleForm(false);
+    setEditingRole(null);
+    fetchRoles();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -231,6 +253,49 @@ export function UsersPage() {
           </table>
         )}
       </div>
+
+      {/* Sección de Roles y Permisos */}
+      {currentUser?.role === 'ADMIN' && (
+        <div className="roles-section">
+          <div className="section-header">
+            <h2>🔐 Roles y Permisos</h2>
+            <button className="btn-primary" onClick={() => { setEditingRole(null); setShowRoleForm(true); }}>
+              + Nuevo Rol
+            </button>
+          </div>
+          
+          <div className="roles-grid">
+            {roles.map((role) => (
+              <div key={role.name} className="role-card">
+                <div className="role-header">
+                  <h3>{role.name}</h3>
+                  <span className="role-desc">{role.description}</span>
+                </div>
+                <div className="role-permissions">
+                  {Object.entries(role).filter(([key]) => key.startsWith('can') && role[key as keyof Role]).map(([key]) => (
+                    <span key={key} className="perm-badge">{key.replace('can', '')}</span>
+                  ))}
+                </div>
+                <button 
+                  className="btn-edit-role"
+                  onClick={() => { setEditingRole(role); setShowRoleForm(true); }}
+                >
+                  Editar Permisos
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Rol */}
+      {showRoleForm && (
+        <RoleForm
+          role={editingRole}
+          onClose={() => { setShowRoleForm(false); setEditingRole(null); }}
+          onSave={handleSaveRole}
+        />
+      )}
     </div>
   );
 }

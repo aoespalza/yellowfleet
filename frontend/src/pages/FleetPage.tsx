@@ -6,6 +6,15 @@ import { StatusBadge } from '../components/StatusBadge';
 import { useAuth } from '../context/AuthContext';
 import './FleetPage.css';
 
+// Función para obtener la fecha local en formato YYYY-MM-DD
+function getLocalDateString(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 const initialFormData: MachineFormData = {
   code: '',
   type: '',
@@ -15,7 +24,7 @@ const initialFormData: MachineFormData = {
   year: new Date().getFullYear(),
   serialNumber: '',
   hourMeter: 0,
-  acquisitionDate: new Date().toISOString().split('T')[0],
+  acquisitionDate: getLocalDateString(),
   acquisitionValue: 0,
   usefulLifeHours: 10000,
   currentLocation: '',
@@ -94,7 +103,7 @@ export function FleetPage() {
       year: machine.year,
       serialNumber: machine.serialNumber,
       hourMeter: machine.hourMeter ?? 0,
-      acquisitionDate: machine.acquisitionDate ? new Date(machine.acquisitionDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      acquisitionDate: machine.acquisitionDate ? new Date(machine.acquisitionDate).toISOString().split('T')[0] : getLocalDateString(),
       acquisitionValue: machine.acquisitionValue ?? 0,
       usefulLifeHours: machine.usefulLifeHours ?? 10000,
       currentLocation: machine.currentLocation ?? '',

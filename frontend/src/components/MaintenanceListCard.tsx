@@ -14,28 +14,27 @@ export function MaintenanceListCard({ machines }: MaintenanceListCardProps) {
       .map(m => {
         const hrsRemaining = m.usefulLifeHours! - m.hourMeter!;
         const pctUsage = (m.hourMeter! / m.usefulLifeHours!) * 100;
-        return { ...m, hrsRemaining, pctUsage };
+        
+        // Determinar urgencia basada en horas restantes
+        let urgency: 'critical' | 'warning' | 'normal' = 'normal';
+        if (hrsRemaining <= 50) urgency = 'critical';
+        else if (hrsRemaining <= 150) urgency = 'warning';
+        
+        return { ...m, hrsRemaining, pctUsage, urgency };
       })
       .filter(m => m.hrsRemaining > 0)
       .sort((a, b) => a.hrsRemaining - b.hrsRemaining)
       .slice(0, 8);
   }, [machines]);
 
-  const getStatusColor = (pctUsage: number) => {
-    if (pctUsage >= 90) return '#dc2626';
-    if (pctUsage >= 75) return '#f59e0b';
-    if (pctUsage >= 50) return '#eab308';
-    return '#22c55e';
-  };
-
   if (machinesNeedingMaintenance.length === 0) {
     return (
-      <div className="maintenance-list-card">
-        <div className="maintenance-list-header">
-          <span className="maintenance-icon">🔧</span>
-          <h3>Próximos a Mantenimiento</h3>
+      <div className="expiring-card">
+        <div className="expiring-header">
+          <span className="expiring-icon">🔧</span>
+          <h3>Próximos Mantenimientos</h3>
         </div>
-        <div className="maintenance-list-empty">
+        <div className="expiring-empty">
           <span>✅</span>
           <p>No hay máquinas próximas a mantenimiento</p>
         </div>
@@ -44,35 +43,36 @@ export function MaintenanceListCard({ machines }: MaintenanceListCardProps) {
   }
 
   return (
-    <div className="maintenance-list-card">
-      <div className="maintenance-list-header">
-        <span className="maintenance-icon">🔧</span>
-        <h3>Próximos a Mantenimiento</h3>
-        <span className="maintenance-count">{machinesNeedingMaintenance.length}</span>
+    <div className="expiring-card">
+      <div className="expiring-header">
+        <span className="expiring-icon">⚠️</span>
+        <h3>Próximos Mantenimientos</h3>
+        <span className="expiring-count">{machinesNeedingMaintenance.length}</span>
       </div>
       
-      <div className="maintenance-list">
+      <div className="expiring-list">
         {machinesNeedingMaintenance.map((machine) => (
           <Link 
             to={`/fleet/${machine.id}/history`} 
             key={machine.id} 
-            className="maintenance-item"
+            className={`expiring-item urgency-${machine.urgency}`}
           >
-            <div className="maintenance-info">
-              <span className="maintenance-code">{machine.code}</span>
-              <span className="maintenance-name">{machine.brand} {machine.model}</span>
+            <div className="expiring-info">
+              <span className="machine-code">{machine.code}</span>
+              <span className="machine-name">{machine.brand} {machine.model}</span>
             </div>
-            <div className="maintenance-stats">
-              <span className="maintenance-hours">
-                {machine.hrsRemaining.toLocaleString()} hrs
-              </span>
-              <div 
-                className="maintenance-bar"
-                style={{ 
-                  width: `${Math.min(machine.pctUsage, 100)}%`,
-                  backgroundColor: getStatusColor(machine.pctUsage)
-                }}
-              />
+            <div className="expiring-doc-info">
+              <span className="doc-name">Horas restantes</span>
+              <span className="doc-expires">{machine.hrsRemaining.toLocaleString()} hrs</span>
+            </div>
+            <div className={`days-badge urgency-${machine.urgency}`}>
+              {machine.hrsRemaining <= 50 ? (
+                <span className="days-text">⚠️ {machine.hrsRemaining.toLocaleString()} hrs</span>
+              ) : machine.hrsRemaining <= 150 ? (
+                <span className="days-text">🟡 {machine.hrsRemaining.toLocaleString()} hrs</span>
+              ) : (
+                <span className="days-text">🟢 {machine.hrsRemaining.toLocaleString()} hrs</span>
+              )}
             </div>
           </Link>
         ))}

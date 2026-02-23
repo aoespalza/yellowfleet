@@ -67,6 +67,13 @@ export interface MachineDetails {
     totalIncome: number;
     totalMaintenanceCost: number;
     totalMargin: number;
+    // Days-based metrics
+    totalContractDays?: number;
+    productiveDays?: number;
+    productivityPercentage?: number;
+    dailyIncome?: number;
+    dailyCost?: number;
+    dailyMargin?: number;
   };
   workOrders: Array<{
     id: string;
@@ -118,6 +125,16 @@ export const machineApi = {
 
   updateHourMeter: async (id: string, hourMeter: number): Promise<{ hourMeter: number }> => {
     const response = await api.patch(`/fleet/machines/${id}/hourmeter`, { hourMeter });
+    return response.data;
+  },
+
+  resetUsefulLifeHours: async (id: string, usefulLifeHours: number): Promise<{
+    previousUsefulLifeHours: number;
+    newUsefulLifeHours: number;
+    currentHourMeter: number;
+    hoursRemaining: number;
+  }> => {
+    const response = await api.patch(`/fleet/machines/${id}/useful-life`, { usefulLifeHours });
     return response.data;
   },
 

@@ -76,6 +76,11 @@ model Machine {
   acquisitionValue Float?
   usefulLifeHours  Float?
   currentLocation  String?
+  
+  // Mantenimiento preventivo
+  hoursSinceLastMaintenance Float?
+  maintenanceIntervalHours Float?
+  lastMaintenanceDate DateTime?
 
   status           MachineStatus
   previousStatus   MachineStatus?

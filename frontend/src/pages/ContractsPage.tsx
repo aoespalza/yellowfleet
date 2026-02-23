@@ -8,11 +8,20 @@ import { AssignedMachinesModal } from '../components/AssignedMachinesModal';
 import { useAuth } from '../context/AuthContext';
 import './ContractsPage.css';
 
+// Función para obtener la fecha local en formato YYYY-MM-DD
+function getLocalDateString(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 const initialFormData: ContractFormData = {
   code: '',
   customer: '',
-  startDate: new Date().toISOString().split('T')[0],
-  endDate: new Date().toISOString().split('T')[0],
+  startDate: getLocalDateString(),
+  endDate: getLocalDateString(),
   value: 0,
   status: 'DRAFT',
   description: '',

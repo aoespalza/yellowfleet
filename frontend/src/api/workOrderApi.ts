@@ -45,8 +45,8 @@ export const workOrderApi = {
     await api.patch(`/workshop/${id}/status`, { status });
   },
 
-  close: async (id: string, exitDate: Date): Promise<void> => {
-    await api.patch(`/workshop/${id}/close`, { exitDate });
+  close: async (id: string, exitDate: Date, sparePartsCost: number = 0, laborCost: number = 0): Promise<void> => {
+    await api.patch(`/workshop/${id}/close`, { exitDate, sparePartsCost, laborCost });
   },
 
   delete: async (id: string): Promise<void> => {

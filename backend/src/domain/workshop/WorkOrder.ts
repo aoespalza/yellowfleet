@@ -42,7 +42,7 @@ export class WorkOrder {
     this.props.updatedAt = new Date();
   }
 
-  public completeWorkOrder(exitDate: Date): void {
+  public completeWorkOrder(exitDate: Date, sparePartsCost?: number, laborCost?: number): void {
     if (
       this.props.status !== WorkOrderStatus.OPEN &&
       this.props.status !== WorkOrderStatus.IN_PROGRESS &&
@@ -52,9 +52,17 @@ export class WorkOrder {
     }
     this.props.status = WorkOrderStatus.COMPLETED;
     this.props.exitDate = exitDate;
+    // Actualizar costos si se proporcionan
+    if (sparePartsCost !== undefined) {
+      this.props.sparePartsCost = sparePartsCost;
+    }
+    if (laborCost !== undefined) {
+      this.props.laborCost = laborCost;
+    }
     this.props.totalCost = this.calculateTotalCost();
-    const entryTime = this.props.entryDate.getTime();
-    const exitTime = exitDate.getTime();
+    const entryDate = this.props.entryDate instanceof Date ? this.props.entryDate : new Date(this.props.entryDate);
+    const exitTime = exitDate instanceof Date ? exitDate.getTime() : new Date(exitDate).getTime();
+    const entryTime = entryDate.getTime();
     this.props.downtimeHours = (exitTime - entryTime) / (1000 * 60 * 60);
     this.props.updatedAt = new Date();
   }

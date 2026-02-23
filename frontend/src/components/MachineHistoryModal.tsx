@@ -186,17 +186,32 @@ export function MachineHistoryModal({ machineId, onClose }: MachineHistoryModalP
               <div className="profitability-section">
                 <h3>📊 Resumen de Rentabilidad</h3>
                 <div className="kpi-grid">
+                  {/* Days and Income per day */}
                   <div className="kpi-card">
-                    <span className="kpi-label">Horas Trabajadas</span>
-                    <span className="kpi-value">{details.profitability.totalWorkedHours.toLocaleString()}</span>
+                    <span className="kpi-label">Días Contrato</span>
+                    <span className="kpi-value">{details.profitability.totalContractDays?.toLocaleString() || 0}</span>
                   </div>
                   <div className="kpi-card">
-                    <span className="kpi-label">Ingresos Totales</span>
-                    <span className="kpi-value income">{formatCurrency(details.profitability.totalIncome)}</span>
+                    <span className="kpi-label">Días Productivos</span>
+                    <span className="kpi-value">{details.profitability.productiveDays?.toLocaleString() || 0}</span>
                   </div>
+                  <div className="kpi-card">
+                    <span className="kpi-label">Ingreso/Día</span>
+                    <span className="kpi-value income">{formatCurrency(details.profitability.dailyIncome || 0)}</span>
+                  </div>
+                  <div className="kpi-card">
+                    <span className="kpi-label">Productividad</span>
+                    <span className="kpi-value">{details.profitability.productivityPercentage?.toFixed(1) || 0}%</span>
+                  </div>
+                  
+                  {/* Costs and Margin */}
                   <div className="kpi-card">
                     <span className="kpi-label">Costos Mantenimiento</span>
                     <span className="kpi-value expense">{formatCurrency(details.profitability.totalMaintenanceCost)}</span>
+                  </div>
+                  <div className="kpi-card">
+                    <span className="kpi-label">Costo/Día</span>
+                    <span className="kpi-value expense">{formatCurrency(details.profitability.dailyCost || 0)}</span>
                   </div>
                   <div className="kpi-card">
                     <span className="kpi-label">Margen Total</span>

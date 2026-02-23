@@ -120,7 +120,7 @@ export function DashboardPage() {
   return (
     <div className="dashboard-page">
       <div className="dashboard-header">
-        <h1>Dashboard Financiero</h1>
+        <h1>Dashboard</h1>
         <span className="dashboard-subtitle">
           Métricas clave de la flota de equipos
         </span>

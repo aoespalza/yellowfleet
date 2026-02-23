@@ -9,6 +9,12 @@ import { prisma } from '../../../infrastructure/database/prisma';
 
 const contractRepository = new PrismaContractRepository();
 
+// Función helper para parsear fechas en hora local
+function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
 export class ContractsController {
   public async create(req: Request, res: Response): Promise<void> {
     try {
@@ -18,8 +24,8 @@ export class ContractsController {
       await createContract.execute({
         code,
         customer,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
+        startDate: parseLocalDate(startDate),
+        endDate: parseLocalDate(endDate),
         value: Number(value),
         description: description || '',
       });
@@ -155,8 +161,8 @@ export class ContractsController {
       await updateContract.execute(id, {
         code,
         customer,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
+        startDate: parseLocalDate(startDate),
+        endDate: parseLocalDate(endDate),
         value: Number(value),
         status,
         description: description || '',
