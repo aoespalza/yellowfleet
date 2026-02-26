@@ -52,7 +52,7 @@ export function ExpiringDocumentsCard() {
       <div className="expiring-card">
         <div className="expiring-header">
           <span className="expiring-icon">📋</span>
-          <h3>Documentos por Vencer</h3>
+          <h3>Documentos por Vencer/Vencidos</h3>
         </div>
         <div className="expiring-empty">
           <span>✅</span>
@@ -66,7 +66,7 @@ export function ExpiringDocumentsCard() {
     <div className="expiring-card">
       <div className="expiring-header">
         <span className="expiring-icon">⚠️</span>
-        <h3>Documentos por Vencer</h3>
+        <h3>Documentos por Vencer/Vencidos</h3>
         <span className="expiring-count">{documents.length}</span>
       </div>
       
@@ -86,7 +86,9 @@ export function ExpiringDocumentsCard() {
               <span className="doc-expires">Vence: {formatDate(doc.expirationDate)}</span>
             </div>
             <div className={`days-badge urgency-${doc.urgency}`}>
-              {doc.daysRemaining <= 7 ? (
+              {doc.daysRemaining <= 0 ? (
+                <span className="days-text">⚠️ VENCIDO</span>
+              ) : doc.daysRemaining <= 7 ? (
                 <span className="days-text">⚠️ {doc.daysRemaining} días</span>
               ) : doc.daysRemaining <= 15 ? (
                 <span className="days-text">🟡 {doc.daysRemaining} días</span>

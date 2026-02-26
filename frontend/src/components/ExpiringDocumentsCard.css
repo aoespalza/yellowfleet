@@ -1,7 +1,7 @@
 .expiring-card {
   background: #fff;
   border-radius: 12px;
-  padding: 20px;
+  padding: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
@@ -14,71 +14,71 @@
 .expiring-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .expiring-icon {
-  font-size: 24px;
+  font-size: 20px;
 }
 
 .expiring-header h3 {
   margin: 0;
   flex: 1;
-  font-size: 18px;
+  font-size: 15px;
   color: #1f2937;
 }
 
 .expiring-count {
   background: #ef4444;
   color: white;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 12px;
-  min-width: 28px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  min-width: 24px;
   text-align: center;
 }
 
 .expiring-empty {
   text-align: center;
-  padding: 30px;
+  padding: 20px;
   color: #6b7280;
 }
 
 .expiring-empty span {
-  font-size: 32px;
+  font-size: 28px;
   display: block;
   margin-bottom: 8px;
 }
 
 .expiring-empty p {
   margin: 0;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .expiring-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  max-height: 300px;
+  gap: 6px;
+  max-height: 250px;
   overflow-y: auto;
 }
 
 .expiring-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
-  border-radius: 8px;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
   border: 1px solid #e5e7eb;
 }
 
 .expiring-item:hover {
-  transform: translateX(4px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateX(2px);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
 .expiring-item.urgency-critical {
@@ -99,17 +99,17 @@
 .expiring-info {
   display: flex;
   flex-direction: column;
-  min-width: 100px;
+  min-width: 70px;
 }
 
 .machine-code {
-  font-weight: 700;
+  font-weight: 600;
   color: #1f2937;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .machine-name {
-  font-size: 12px;
+  font-size: 10px;
   color: #6b7280;
 }
 
@@ -120,20 +120,20 @@
 }
 
 .doc-name {
-  font-weight: 600;
+  font-weight: 500;
   color: #374151;
-  font-size: 13px;
+  font-size: 11px;
 }
 
 .doc-expires {
-  font-size: 12px;
+  font-size: 10px;
   color: #6b7280;
 }
 
 .days-badge {
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 12px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 10px;
   font-weight: 600;
 }
 
@@ -158,17 +158,17 @@
 
 /* Scrollbar */
 .expiring-list::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 .expiring-list::-webkit-scrollbar-track {
   background: #f1f5f9;
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
 .expiring-list::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
 .expiring-list::-webkit-scrollbar-thumb:hover {

@@ -645,10 +645,10 @@ export class FleetController {
       const futureDate = new Date();
       futureDate.setDate(now.getDate() + days);
 
+      // Obtener documentos próximos a vencer Y vencidos
       const documents = await prisma.legalDocument.findMany({
         where: {
           expirationDate: {
-            gte: now,
             lte: futureDate,
           },
         },
@@ -671,7 +671,7 @@ export class FleetController {
         const daysRemaining = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
         
         let urgency: 'critical' | 'warning' | 'normal';
-        if (daysRemaining <= 7) urgency = 'critical';
+        if (daysRemaining <= 0) urgency = 'critical';
         else if (daysRemaining <= 15) urgency = 'warning';
         else urgency = 'normal';
 

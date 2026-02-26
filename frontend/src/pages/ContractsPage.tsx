@@ -38,6 +38,7 @@ export function ContractsPage({ initialContractId }: ContractsPageProps) {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [viewMode, setViewMode] = useState(false); // Modo vista (no editable)
   const [editingContractId, setEditingContractId] = useState<string | null>(null);
   const [formData, setFormData] = useState<ContractFormData>(initialFormData);
   const [assignModal, setAssignModal] = useState<{ contractId: string; contractCode: string } | null>(null);
@@ -53,13 +54,14 @@ export function ContractsPage({ initialContractId }: ContractsPageProps) {
     value: '',
   });
 
-  // Si se pasa un contractId inicial, abrir para editar
+  // Si se pasa un contractId inicial, abrir en modo vista
   useEffect(() => {
     if (initialContractId && contracts.length > 0) {
       const contract = contracts.find(c => c.id === initialContractId);
       if (contract) {
         setEditingContractId(initialContractId);
         setShowForm(true);
+        setViewMode(true); // Abrir en modo vista
         setFormData({
           code: contract.code,
           customer: contract.customer,
@@ -174,6 +176,7 @@ export function ContractsPage({ initialContractId }: ContractsPageProps) {
     setFormData(initialFormData);
     setEditingContractId(null);
     setShowForm(false);
+    setViewMode(false);
   };
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -235,7 +238,9 @@ export function ContractsPage({ initialContractId }: ContractsPageProps) {
           onChange={handleInputChange}
           onSubmit={handleSubmit}
           onCancel={resetForm}
-          isEditing={!!editingContractId}
+          isEditing={!!editingContractId && !viewMode}
+          viewMode={viewMode}
+          onEnableEdit={() => setViewMode(false)}
         />
       )}
 

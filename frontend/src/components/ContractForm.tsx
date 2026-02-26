@@ -6,6 +6,8 @@ interface ContractFormProps {
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
   isEditing: boolean;
+  viewMode?: boolean;
+  onEnableEdit?: () => void;
 }
 
 const statusOptions: { value: ContractStatus; label: string }[] = [
@@ -15,10 +17,12 @@ const statusOptions: { value: ContractStatus; label: string }[] = [
   { value: 'CANCELLED', label: 'Cancelado' },
 ];
 
-export function ContractForm({ formData, onChange, onSubmit, onCancel, isEditing }: ContractFormProps) {
+export function ContractForm({ formData, onChange, onSubmit, onCancel, isEditing, viewMode, onEnableEdit }: ContractFormProps) {
+  const isDisabled = viewMode;
+  
   return (
     <div className="form-container">
-      <h2>{isEditing ? 'Editar Contrato' : 'Nuevo Contrato'}</h2>
+      <h2>{viewMode ? 'Ver Contrato' : (isEditing ? 'Editar Contrato' : 'Nuevo Contrato')}</h2>
       <form onSubmit={onSubmit} className="contract-form">
         <div className="form-row">
           <div className="form-group">
@@ -30,6 +34,7 @@ export function ContractForm({ formData, onChange, onSubmit, onCancel, isEditing
               onChange={onChange}
               required
               placeholder="CTR-001"
+              disabled={isDisabled}
             />
           </div>
           <div className="form-group">
@@ -41,6 +46,7 @@ export function ContractForm({ formData, onChange, onSubmit, onCancel, isEditing
               onChange={onChange}
               required
               placeholder="Empresa Constructora XYZ"
+              disabled={isDisabled}
             />
           </div>
         </div>
@@ -53,6 +59,7 @@ export function ContractForm({ formData, onChange, onSubmit, onCancel, isEditing
               value={formData.startDate}
               onChange={onChange}
               required
+              disabled={isDisabled}
             />
           </div>
           <div className="form-group">
@@ -63,6 +70,7 @@ export function ContractForm({ formData, onChange, onSubmit, onCancel, isEditing
               value={formData.plazo || ''}
               onChange={onChange}
               placeholder="0"
+              disabled={isDisabled}
             />
           </div>
         </div>
@@ -76,6 +84,7 @@ export function ContractForm({ formData, onChange, onSubmit, onCancel, isEditing
               onChange={onChange}
               step="0.01"
               placeholder="0.00"
+              disabled={isDisabled}
             />
           </div>
           <div className="form-group">
@@ -86,6 +95,7 @@ export function ContractForm({ formData, onChange, onSubmit, onCancel, isEditing
               value={formData.endDate}
               onChange={onChange}
               required
+              disabled={isDisabled}
             />
           </div>
         </div>
@@ -105,7 +115,7 @@ export function ContractForm({ formData, onChange, onSubmit, onCancel, isEditing
           </div>
           <div className="form-group">
             <label>Estado</label>
-            <select name="status" value={formData.status} onChange={onChange} required>
+            <select name="status" value={formData.status} onChange={onChange} required disabled={isDisabled}>
               {statusOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
@@ -123,16 +133,30 @@ export function ContractForm({ formData, onChange, onSubmit, onCancel, isEditing
               onChange={onChange}
               rows={3}
               placeholder="Descripción del contrato..."
+              disabled={isDisabled}
             />
           </div>
         </div>
         <div className="form-actions">
-          <button type="submit" className="btn-submit">
-            {isEditing ? 'Actualizar Contrato' : 'Crear Contrato'}
-          </button>
-          <button type="button" className="btn-cancel" onClick={onCancel}>
-            Cancelar
-          </button>
+          {viewMode ? (
+            <>
+              <button type="button" className="btn-submit" onClick={onEnableEdit}>
+                Editar Contrato
+              </button>
+              <button type="button" className="btn-cancel" onClick={onCancel}>
+                Cerrar
+              </button>
+            </>
+          ) : (
+            <>
+              <button type="submit" className="btn-submit">
+                {isEditing ? 'Actualizar Contrato' : 'Crear Contrato'}
+              </button>
+              <button type="button" className="btn-cancel" onClick={onCancel}>
+                Cancelar
+              </button>
+            </>
+          )}
         </div>
       </form>
     </div>

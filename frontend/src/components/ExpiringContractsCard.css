@@ -1,19 +1,21 @@
 .contract-code {
-  font-weight: 700;
+  font-weight: 600;
   color: #1f2937;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .contract-customer {
-  font-size: 12px;
+  font-size: 10px;
   color: #6b7280;
 }
 
 .contract-end {
-  font-size: 12px;
+  font-size: 10px;
   color: #6b7280;
 }
 
 .expiring-item {
   cursor: pointer;
+  padding: 8px 10px;
+  gap: 8px;
 }
