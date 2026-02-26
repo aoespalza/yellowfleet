@@ -67,7 +67,7 @@ export function WorkOrderForm({ formData, machines, onChange, onSubmit, onCancel
             </select>
           </div>
           <div className="form-group">
-            <label>Horas de Inactividad</label>
+            <label>Días de Inactividad</label>
             <input
               type="number"
               name="downtimeHours"

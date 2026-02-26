@@ -7,9 +7,21 @@ interface ContractsTableProps {
   onDelete: (id: string) => void;
   onAssign: (contract: Contract) => void;
   onViewMachines: (contract: Contract) => void;
+  filters?: Record<string, string>;
+  onFilterChange?: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  onClearFilters?: () => void;
 }
 
-export function ContractsTable({ contracts, onEdit, onDelete, onAssign, onViewMachines }: ContractsTableProps) {
+export function ContractsTable({ 
+  contracts, 
+  onEdit, 
+  onDelete, 
+  onAssign, 
+  onViewMachines,
+  filters,
+  onFilterChange,
+  onClearFilters
+}: ContractsTableProps) {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('es-CL');
   };
@@ -31,14 +43,48 @@ export function ContractsTable({ contracts, onEdit, onDelete, onAssign, onViewMa
       <table className="data-table">
         <thead>
           <tr>
-            <th>Código</th>
-            <th>Cliente</th>
-            <th>Inicio</th>
-            <th>Fin</th>
-            <th>Valor</th>
+            <th>
+              {filters && onFilterChange ? (
+                <input type="text" name="code" placeholder="Código" value={filters.code || ''} onChange={onFilterChange} className="filter-input" />
+              ) : 'Código'}
+            </th>
+            <th>
+              {filters && onFilterChange ? (
+                <input type="text" name="customer" placeholder="Cliente" value={filters.customer || ''} onChange={onFilterChange} className="filter-input" />
+              ) : 'Cliente'}
+            </th>
+            <th>
+              {filters && onFilterChange ? (
+                <input type="date" name="startDate" value={filters.startDate || ''} onChange={onFilterChange} className="filter-input" />
+              ) : 'Inicio'}
+            </th>
+            <th>
+              {filters && onFilterChange ? (
+                <input type="date" name="endDate" value={filters.endDate || ''} onChange={onFilterChange} className="filter-input" />
+              ) : 'Fin'}
+            </th>
+            <th>
+              {filters && onFilterChange ? (
+                <input type="text" name="value" placeholder="Valor" value={filters.value || ''} onChange={onFilterChange} className="filter-input" />
+              ) : 'Valor'}
+            </th>
             <th>Máquinas</th>
-            <th>Estado</th>
-            <th>Acciones</th>
+            <th>
+              {filters && onFilterChange ? (
+                <select name="status" value={filters.status || ''} onChange={onFilterChange} className="filter-input">
+                  <option value="">Todos</option>
+                  <option value="DRAFT">Borrador</option>
+                  <option value="ACTIVE">Activo</option>
+                  <option value="COMPLETED">Completado</option>
+                  <option value="CANCELLED">Cancelado</option>
+                </select>
+              ) : 'Estado'}
+            </th>
+            <th>
+              {filters && onClearFilters && (
+                <button onClick={onClearFilters} className="btn-clear-filters" title="Limpiar filtros">✕</button>
+              )}
+            </th>
           </tr>
         </thead>
         <tbody>

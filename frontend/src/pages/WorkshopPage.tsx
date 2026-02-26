@@ -161,6 +161,7 @@ export function WorkshopPage() {
     });
     setEditingWorkOrderId(workOrder.id);
     setShowForm(true);
+    window.scrollTo(0, 0);
   };
 
   const handleSelectOrder = (order: WorkOrder) => {
@@ -334,6 +335,7 @@ export function WorkshopPage() {
                 resetForm();
               } else {
                 setShowForm(!showForm);
+                window.scrollTo(0, 0);
               }
             }}
           >
@@ -431,8 +433,8 @@ export function WorkshopPage() {
                       </div>
                     )}
                     <div className="order-info">
-                      <label>Horas Inactividad</label>
-                      <span className="order-value">{selectedOrder.downtimeHours || 0}h</span>
+                      <label>Días Inactividad</label>
+                      <span className="order-value">{selectedOrder.downtimeHours || 0}d</span>
                     </div>
                     <div className="order-info">
                       <label>Repuestos</label>

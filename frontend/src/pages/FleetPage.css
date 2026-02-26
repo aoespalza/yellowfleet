@@ -70,3 +70,32 @@
     background: var(--primary-dark, #d97706);
   }
   
+  /* Filtros */
+  .filter-input {
+    width: 100%;
+    padding: 6px 8px;
+    font-size: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+  }
+  
+  .filter-input:focus {
+    outline: none;
+    border-color: #f59e0b;
+  }
+  
+  .btn-clear-filters {
+    padding: 6px 10px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  
+  .btn-clear-filters:hover {
+    background: #dc2626;
+  }
+  

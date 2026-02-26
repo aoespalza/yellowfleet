@@ -2,9 +2,15 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { machineApi } from '../api/machineApi';
 import type { Machine, MachineFormData } from '../types/machine';
+import { MACHINE_TYPES } from '../types/machine';
 import { StatusBadge } from '../components/StatusBadge';
 import { useAuth } from '../context/AuthContext';
 import './FleetPage.css';
+
+const getTypeLabel = (typeValue: string) => {
+  const found = MACHINE_TYPES.find(t => t.value === typeValue);
+  return found ? found.label : typeValue;
+};
 
 // Función para obtener la fecha local en formato YYYY-MM-DD
 function getLocalDateString(): string {
@@ -37,6 +43,18 @@ export function FleetPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingMachineId, setEditingMachineId] = useState<string | null>(null);
   const [formData, setFormData] = useState<MachineFormData>(initialFormData);
+
+  // Filtros
+  const [filters, setFilters] = useState<Record<string, string>>({
+    code: '',
+    type: '',
+    brand: '',
+    model: '',
+    year: '',
+    hourMeter: '',
+    location: '',
+    status: '',
+  });
 
   const fetchMachines = async () => {
     try {
@@ -110,6 +128,7 @@ export function FleetPage() {
     });
     setEditingMachineId(machine.id);
     setShowForm(true);
+    window.scrollTo(0, 0);
   };
 
   const handleDelete = async (id: string) => {
@@ -130,6 +149,38 @@ export function FleetPage() {
     setShowForm(false);
   };
 
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFilters((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      code: '',
+      type: '',
+      brand: '',
+      model: '',
+      year: '',
+      hourMeter: '',
+      location: '',
+      status: '',
+    });
+  };
+
+  const filteredMachines: Machine[] = machines.filter((machine) => {
+    const f = filters;
+    return (
+      (f.code === '' || machine.code.toLowerCase().includes(f.code.toLowerCase())) &&
+      (f.type === '' || machine.type === f.type) &&
+      (f.brand === '' || machine.brand.toLowerCase().includes(f.brand.toLowerCase())) &&
+      (f.model === '' || machine.model.toLowerCase().includes(f.model.toLowerCase())) &&
+      (f.year === '' || machine.year.toString().includes(f.year)) &&
+      (f.hourMeter === '' || String(machine.hourMeter || '').includes(f.hourMeter)) &&
+      (f.location === '' || (machine.currentLocation || '').toLowerCase().includes(f.location.toLowerCase())) &&
+      (f.status === '' || machine.status === f.status)
+    );
+  });
+
   return (
     <div className="fleet-page">
       <div className="fleet-header">
@@ -142,6 +193,7 @@ export function FleetPage() {
                 resetForm();
               } else {
                 setShowForm(!showForm);
+                window.scrollTo(0, 0);
               }
             }}
           >
@@ -170,11 +222,11 @@ export function FleetPage() {
                 <label>Tipo</label>
                 <select name="type" value={formData.type} onChange={handleInputChange} required>
                   <option value="">Seleccionar tipo</option>
-                  <option value="Excavadora">Excavadora</option>
-                  <option value="Cargador">Cargador</option>
-                  <option value="Retroexcavadora">Retroexcavadora</option>
-                  <option value="Compactador">Compactador</option>
-                  <option value="Grúa">Grúa</option>
+                  {MACHINE_TYPES.map((type) => (
+                    <option key={type.value} value={type.value}>
+                      {type.label}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -326,26 +378,110 @@ export function FleetPage() {
           <table className="machines-table">
             <thead>
               <tr>
-                <th>Código</th>
-                <th>Tipo</th>
-                <th>Marca</th>
-                <th>Modelo</th>
-                <th>Año</th>
-                <th>Horas</th>
-                <th>Ubicación</th>
-                <th>Estado</th>
-                <th>Acciones</th>
+                <th>
+                  <input
+                    type="text"
+                    name="code"
+                    placeholder="Código"
+                    value={filters.code}
+                    onChange={handleFilterChange}
+                    className="filter-input"
+                  />
+                </th>
+                <th>
+                  <select
+                    name="type"
+                    value={filters.type}
+                    onChange={handleFilterChange}
+                    className="filter-input"
+                  >
+                    <option value="">Todos</option>
+                    {MACHINE_TYPES.map(t => (
+                      <option key={t.value} value={t.value}>{t.label}</option>
+                    ))}
+                  </select>
+                </th>
+                <th>
+                  <input
+                    type="text"
+                    name="brand"
+                    placeholder="Marca"
+                    value={filters.brand}
+                    onChange={handleFilterChange}
+                    className="filter-input"
+                  />
+                </th>
+                <th>
+                  <input
+                    type="text"
+                    name="model"
+                    placeholder="Modelo"
+                    value={filters.model}
+                    onChange={handleFilterChange}
+                    className="filter-input"
+                  />
+                </th>
+                <th>
+                  <input
+                    type="text"
+                    name="year"
+                    placeholder="Año"
+                    value={filters.year}
+                    onChange={handleFilterChange}
+                    className="filter-input"
+                  />
+                </th>
+                <th>
+                  <input
+                    type="text"
+                    name="hourMeter"
+                    placeholder="Horas"
+                    value={filters.hourMeter}
+                    onChange={handleFilterChange}
+                    className="filter-input"
+                  />
+                </th>
+                <th>
+                  <input
+                    type="text"
+                    name="location"
+                    placeholder="Ubicación"
+                    value={filters.location}
+                    onChange={handleFilterChange}
+                    className="filter-input"
+                  />
+                </th>
+                <th>
+                  <select
+                    name="status"
+                    value={filters.status}
+                    onChange={handleFilterChange}
+                    className="filter-input"
+                  >
+                    <option value="">Todos</option>
+                    <option value="AVAILABLE">Disponible</option>
+                    <option value="IN_CONTRACT">En Contrato</option>
+                    <option value="IN_WORKSHOP">En Taller</option>
+                    <option value="IN_TRANSFER">En Transferencia</option>
+                    <option value="INACTIVE">Inactivo</option>
+                  </select>
+                </th>
+                <th>
+                  <button onClick={clearFilters} className="btn-clear-filters" title="Limpiar filtros">
+                    ✕
+                  </button>
+                </th>
               </tr>
             </thead>
             <tbody>
-              {machines.map((machine) => (
+              {filteredMachines.map((machine) => (
                 <tr key={machine.id}>
                   <td>
                     <Link to={`/fleet/${machine.id}/history`} className="machine-code-link">
                       {machine.code}
                     </Link>
                   </td>
-                  <td>{machine.type}</td>
+                  <td>{getTypeLabel(machine.type)}</td>
                   <td>{machine.brand}</td>
                   <td>{machine.model}</td>
                   <td>{machine.year}</td>

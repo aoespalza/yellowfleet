@@ -37,6 +37,16 @@ export function ContractsPage() {
   const [assignModal, setAssignModal] = useState<{ contractId: string; contractCode: string } | null>(null);
   const [assignedMachinesModal, setAssignedMachinesModal] = useState<{ contractId: string; contractCode: string } | null>(null);
 
+  // Filtros
+  const [filters, setFilters] = useState<Record<string, string>>({
+    code: '',
+    customer: '',
+    status: '',
+    startDate: '',
+    endDate: '',
+    value: '',
+  });
+
   const fetchContracts = async () => {
     try {
       setLoading(true);
@@ -92,6 +102,7 @@ export function ContractsPage() {
     });
     setEditingContractId(contract.id);
     setShowForm(true);
+    window.scrollTo(0, 0);
   };
 
   const handleDelete = async (id: string) => {
@@ -112,6 +123,34 @@ export function ContractsPage() {
     setShowForm(false);
   };
 
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFilters((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      code: '',
+      customer: '',
+      status: '',
+      startDate: '',
+      endDate: '',
+      value: '',
+    });
+  };
+
+  const filteredContracts: Contract[] = contracts.filter((contract) => {
+    const f = filters;
+    return (
+      (f.code === '' || contract.code.toLowerCase().includes(f.code.toLowerCase())) &&
+      (f.customer === '' || contract.customer.toLowerCase().includes(f.customer.toLowerCase())) &&
+      (f.status === '' || contract.status === f.status) &&
+      (f.startDate === '' || contract.startDate.includes(f.startDate)) &&
+      (f.endDate === '' || contract.endDate.includes(f.endDate)) &&
+      (f.value === '' || contract.value.toString().includes(f.value))
+    );
+  });
+
   const handleAssignMachine = (contract: Contract) => {
     setAssignModal({ contractId: contract.id, contractCode: contract.code });
   };
@@ -128,6 +167,7 @@ export function ContractsPage() {
                 resetForm();
               } else {
                 setShowForm(!showForm);
+                window.scrollTo(0, 0);
               }
             }}
           >
@@ -151,11 +191,14 @@ export function ContractsPage() {
       ) : (
         <>
           <ContractsTable
-            contracts={contracts}
+            contracts={filteredContracts}
             onEdit={handleEdit}
             onDelete={handleDelete}
             onAssign={handleAssignMachine}
             onViewMachines={(contract) => setAssignedMachinesModal({ contractId: contract.id, contractCode: contract.code })}
+            filters={filters}
+            onFilterChange={handleFilterChange}
+            onClearFilters={clearFilters}
           />
           {assignModal && (
             <AssignMachineModal

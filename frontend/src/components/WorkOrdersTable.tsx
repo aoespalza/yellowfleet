@@ -46,7 +46,7 @@ export function WorkOrdersTable({ workOrders, onEdit, onDelete, onStatusChange, 
             <th>Repuestos</th>
             <th>Mano Obra</th>
             <th>Total</th>
-            <th>Horas Inact.</th>
+            <th>Días Inact.</th>
             <th>Estado</th>
             <th>Acciones</th>
           </tr>
@@ -61,7 +61,7 @@ export function WorkOrdersTable({ workOrders, onEdit, onDelete, onStatusChange, 
               <td>{formatCurrency(workOrder.sparePartsCost)}</td>
               <td>{formatCurrency(workOrder.laborCost)}</td>
               <td>{formatCurrency(workOrder.totalCost)}</td>
-              <td>{workOrder.downtimeHours !== null && workOrder.downtimeHours !== undefined ? `${workOrder.downtimeHours}h` : '—'}</td>
+              <td>{workOrder.downtimeHours !== null && workOrder.downtimeHours !== undefined ? `${workOrder.downtimeHours}d` : '—'}</td>
               <td>
                 <WorkOrderStatusBadge status={workOrder.status} />
               </td>

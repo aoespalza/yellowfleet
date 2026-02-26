@@ -327,7 +327,7 @@ export function MachineHistoryModal({ machineId, onClose }: MachineHistoryModalP
                         <td>{formatCurrency(wo.sparePartsCost)}</td>
                         <td>{formatCurrency(wo.laborCost)}</td>
                         <td className="expense">{formatCurrency(wo.totalCost)}</td>
-                        <td>{wo.downtimeHours ? `${wo.downtimeHours} hrs` : '-'}</td>
+                        <td>{wo.downtimeHours ? `${wo.downtimeHours} días` : '-'}</td>
                       </tr>
                     ))}
                   </tbody>

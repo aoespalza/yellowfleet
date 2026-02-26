@@ -21,6 +21,20 @@ enum MachineStatus {
   INACTIVE
 }
 
+enum MachineType {
+  AUTOHORMIGONERA
+  BOMBA_DE_CONCRETO
+  CAMION
+  CAMIONETA
+  COMPRESOR_DE_AIRE
+  DUMPER
+  ESCAVADORA
+  MINICARGADOR
+  MINIEXCAVADORA
+  PLANTA_DE_CONCRETO
+  TORRE_GRUA
+}
+
 enum WorkOrderType {
   PREVENTIVE
   CORRECTIVE
@@ -65,7 +79,7 @@ model LegalDocument {
 model Machine {
   id               String        @id @default(uuid())
   code             String        @unique
-  type             String
+  type             MachineType
   brand            String
   model            String
   imageUrl         String?

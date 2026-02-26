@@ -94,6 +94,7 @@ export function UsersPage() {
       role: user.role,
     });
     setShowForm(true);
+    window.scrollTo(0, 0);
   };
 
   const handleDelete = async (id: string) => {
@@ -129,7 +130,7 @@ export function UsersPage() {
       <div className="page-header">
         <h1>👥 Gestión de Usuarios</h1>
         {currentUser?.role === 'ADMIN' && (
-          <button className="btn-primary" onClick={() => setShowForm(!showForm)}>
+          <button className="btn-primary" onClick={() => { setShowForm(!showForm); window.scrollTo(0, 0); }}>
             {showForm ? 'Cancelar' : '+ Nuevo Usuario'}
           </button>
         )}
