@@ -59,12 +59,18 @@ export class Contract {
     this.props.updatedAt = new Date();
   }
 
+  public addMachineAssignmentFromDb(assignment: MachineAssignment): void {
+    this.assignments.push(assignment);
+  }
+
   public update(data: {
     code: string;
     customer: string;
     startDate: Date;
     endDate: Date;
     value: number;
+    monthlyValue?: number;
+    plazo?: number;
     status: ContractStatus;
     description: string;
   }): void {
@@ -73,6 +79,8 @@ export class Contract {
     this.props.startDate = data.startDate;
     this.props.endDate = data.endDate;
     this.props.value = data.value;
+    this.props.monthlyValue = data.monthlyValue;
+    this.props.plazo = data.plazo;
     this.props.status = data.status;
     this.props.description = data.description;
     this.props.updatedAt = new Date();
@@ -108,6 +116,14 @@ export class Contract {
 
   public get value(): number {
     return this.props.value;
+  }
+
+  public get monthlyValue(): number | undefined {
+    return this.props.monthlyValue;
+  }
+
+  public get plazo(): number | undefined {
+    return this.props.plazo;
   }
 
   public get status(): ContractStatus {

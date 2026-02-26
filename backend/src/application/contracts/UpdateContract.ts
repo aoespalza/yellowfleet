@@ -7,6 +7,8 @@ export interface UpdateContractInput {
   startDate: Date;
   endDate: Date;
   value: number;
+  monthlyValue?: number;
+  plazo?: number;
   status: string;
   description: string;
 }
@@ -27,6 +29,8 @@ export class UpdateContract {
       startDate: input.startDate,
       endDate: input.endDate,
       value: input.value,
+      monthlyValue: input.monthlyValue,
+      plazo: input.plazo,
       status: input.status as any,
       description: input.description,
     });

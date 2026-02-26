@@ -21,20 +21,6 @@ enum MachineStatus {
   INACTIVE
 }
 
-enum MachineType {
-  AUTOHORMIGONERA
-  BOMBA_DE_CONCRETO
-  CAMION
-  CAMIONETA
-  COMPRESOR_DE_AIRE
-  DUMPER
-  ESCAVADORA
-  MINICARGADOR
-  MINIEXCAVADORA
-  PLANTA_DE_CONCRETO
-  TORRE_GRUA
-}
-
 enum WorkOrderType {
   PREVENTIVE
   CORRECTIVE
@@ -79,7 +65,7 @@ model LegalDocument {
 model Machine {
   id               String        @id @default(uuid())
   code             String        @unique
-  type             MachineType
+  type             String
   brand            String
   model            String
   imageUrl         String?
@@ -145,6 +131,8 @@ model Contract {
   startDate   DateTime
   endDate     DateTime
   value       Float
+  monthlyValue Float?
+  plazo       Int?
   status      ContractStatus
   description String?
   createdAt   DateTime       @default(now())
@@ -156,7 +144,7 @@ model MachineAssignment {
   id              String   @id @default(uuid())
   contractId      String
   machineId       String
-  hourlyRate      Float
+  hourlyRate      Float?
   workedHours     Float
   maintenanceCost Float
   generatedIncome Float

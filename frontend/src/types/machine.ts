@@ -46,6 +46,7 @@ export interface Machine {
   lastMaintenanceDate?: string;
   status: MachineStatus;
   currentLocation: null;
+  commercialValue?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -63,4 +64,5 @@ export interface MachineFormData {
   acquisitionValue: number;
   usefulLifeHours: number;
   currentLocation: string;
+  commercialValue?: number;
 }

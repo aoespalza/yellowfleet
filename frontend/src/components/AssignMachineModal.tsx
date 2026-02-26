@@ -13,7 +13,6 @@ interface AssignMachineModalProps {
 export function AssignMachineModal({ contractId, contractCode, onClose, onAssigned }: AssignMachineModalProps) {
   const [machines, setMachines] = useState<Machine[]>([]);
   const [selectedMachine, setSelectedMachine] = useState('');
-  const [hourlyRate, setHourlyRate] = useState(0);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -31,11 +30,11 @@ export function AssignMachineModal({ contractId, contractCode, onClose, onAssign
 
   const handleAssign = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedMachine || hourlyRate <= 0) return;
+    if (!selectedMachine) return;
 
     setSaving(true);
     try {
-      await contractApi.assignMachine(contractId, selectedMachine, hourlyRate);
+      await contractApi.assignMachine(contractId, selectedMachine);
       onAssigned();
       onClose();
     } catch (error: any) {
@@ -69,18 +68,6 @@ export function AssignMachineModal({ contractId, contractCode, onClose, onAssign
                 </option>
               ))}
             </select>
-          </div>
-
-          <div className="form-group">
-            <label>Tarifa por Hora ($)</label>
-            <input
-              type="number"
-              value={hourlyRate}
-              onChange={(e) => setHourlyRate(parseFloat(e.target.value) || 0)}
-              min="0"
-              step="0.01"
-              required
-            />
           </div>
 
           <div className="form-actions">

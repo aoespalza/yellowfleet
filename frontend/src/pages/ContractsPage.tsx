@@ -22,12 +22,18 @@ const initialFormData: ContractFormData = {
   customer: '',
   startDate: getLocalDateString(),
   endDate: getLocalDateString(),
-  value: 0,
+  value: '',
+  monthlyValue: '',
+  plazo: '',
   status: 'DRAFT',
   description: '',
 };
 
-export function ContractsPage() {
+interface ContractsPageProps {
+  initialContractId?: string;
+}
+
+export function ContractsPage({ initialContractId }: ContractsPageProps) {
   const { user } = useAuth();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,6 +52,28 @@ export function ContractsPage() {
     endDate: '',
     value: '',
   });
+
+  // Si se pasa un contractId inicial, abrir para editar
+  useEffect(() => {
+    if (initialContractId && contracts.length > 0) {
+      const contract = contracts.find(c => c.id === initialContractId);
+      if (contract) {
+        setEditingContractId(initialContractId);
+        setShowForm(true);
+        setFormData({
+          code: contract.code,
+          customer: contract.customer,
+          startDate: contract.startDate.split('T')[0],
+          endDate: contract.endDate.split('T')[0],
+          value: contract.value.toString(),
+          monthlyValue: contract.monthlyValue ? contract.monthlyValue.toString() : '',
+          plazo: contract.plazo ? contract.plazo.toString() : '',
+          status: contract.status,
+          description: contract.description || '',
+        });
+      }
+    }
+  }, [initialContractId, contracts]);
 
   const fetchContracts = async () => {
     try {
@@ -67,10 +95,33 @@ export function ContractsPage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === 'value' ? parseFloat(value) || 0 : value,
-    }));
+    
+    let newData = {
+      ...formData,
+      [name]: ['value', 'monthlyValue', 'plazo'].includes(name) ? parseFloat(value) || 0 : value,
+    };
+    
+    // Calcular automáticamente: fecha fin según plazo
+    if (name === 'startDate' || name === 'plazo') {
+      const startDate = newData.startDate ? new Date(newData.startDate) : null;
+      const plazo = Number(newData.plazo);
+      if (startDate && plazo) {
+        const endDate = new Date(startDate);
+        endDate.setMonth(endDate.getMonth() + plazo);
+        newData.endDate = endDate.toISOString().split('T')[0];
+      }
+    }
+    
+    // Calcular automáticamente: valor total = mensual × plazo
+    if (name === 'monthlyValue' || name === 'plazo') {
+      const monthlyValue = Number(newData.monthlyValue);
+      const plazo = Number(newData.plazo);
+      if (monthlyValue && plazo) {
+        newData.value = (monthlyValue * plazo).toString();
+      }
+    }
+    
+    setFormData(newData);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -96,7 +147,9 @@ export function ContractsPage() {
       customer: contract.customer,
       startDate: new Date(contract.startDate).toISOString().split('T')[0],
       endDate: new Date(contract.endDate).toISOString().split('T')[0],
-      value: contract.value,
+      value: contract.value.toString(),
+      monthlyValue: contract.monthlyValue?.toString(),
+      plazo: contract.plazo?.toString(),
       status: contract.status,
       description: contract.description,
     });

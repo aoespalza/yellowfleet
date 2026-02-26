@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { machineApi } from '../api/machineApi';
+import { contractApi } from '../api/contractApi';
 import type { Machine } from '../types/machine';
+import type { Contract } from '../types/contract';
 import { KPICard } from '../components/KPICard';
 import { KPIGrid } from '../components/KPIGrid';
 import { ExpiringDocumentsCard } from '../components/ExpiringDocumentsCard';
 import { MaintenanceListCard } from '../components/MaintenanceListCard';
+import { ExpiringContractsCard } from '../components/ExpiringContractsCard';
 import type { KPIMetric } from '../types/dashboard';
 import './DashboardPage.css';
 
@@ -16,23 +19,32 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
-export function DashboardPage() {
+interface DashboardPageProps {
+  onNavigate?: (page: string, contractId?: string) => void;
+}
+
+export function DashboardPage({ onNavigate }: DashboardPageProps) {
   const [machines, setMachines] = useState<Machine[]>([]);
+  const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchMachines = async () => {
+    const fetchData = async () => {
       try {
-        const data = await machineApi.getAll();
-        setMachines(data);
+        const [machinesData, contractsData] = await Promise.all([
+          machineApi.getAll(),
+          contractApi.getAll(),
+        ]);
+        setMachines(machinesData);
+        setContracts(contractsData);
       } catch (error) {
-        console.error('Error fetching machines:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchMachines();
+    fetchData();
   }, []);
 
   const metrics = useMemo<KPIMetric[]>(() => {
@@ -134,6 +146,9 @@ export function DashboardPage() {
         </KPIGrid>
 
         <div className="dashboard-charts">
+          <div className="dashboard-chart">
+            <ExpiringContractsCard contracts={contracts} onNavigate={onNavigate} />
+          </div>
           <div className="dashboard-chart">
             <ExpiringDocumentsCard />
           </div>

@@ -8,7 +8,6 @@ const prismaClient = new PrismaClient();
 export interface AssignMachineInput {
   contractId: string;
   machineId: string;
-  hourlyRate: number;
 }
 
 export class AssignMachineToContract {
@@ -23,10 +22,14 @@ export class AssignMachineToContract {
       throw new Error('Contract not found');
     }
 
+    // Calcular tarifa por hora: valor mensual / 1
+    const monthlyValue = contract.monthlyValue || 0;
+    const hourlyRate = monthlyValue > 0 ? monthlyValue / 1 : 0;
+
     const assignment = MachineAssignment.create({
       contractId: input.contractId,
       machineId: input.machineId,
-      hourlyRate: input.hourlyRate,
+      hourlyRate,
       workedHours: 0,
       maintenanceCost: 0,
       generatedIncome: 0,

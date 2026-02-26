@@ -107,17 +107,8 @@ export class WorkOrder {
     this._laborCost = laborCost;
     this._totalCost = sparePartsCost + laborCost;
     
-    const exitTime = exitDate.getTime();
-    const entryTime = this.entryDate.getTime();
-    
-    // Validar que la fecha de salida no sea anterior a la de ingreso
-    if (exitTime < entryTime) {
-      throw new Error('La fecha de salida no puede ser anterior a la fecha de ingreso');
-    }
-    
-    // Calcular días de inactividad (horas / 24)
-    const totalHours = (exitTime - entryTime) / (1000 * 60 * 60);
-    this._downtimeHours = Math.floor(totalHours);
+    const hours = Math.abs(exitDate.getTime() - this.entryDate.getTime()) / 36e5;
+    this._downtimeHours = Math.floor(hours);
     
     this._status = WorkOrderStatus.COMPLETED;
   }

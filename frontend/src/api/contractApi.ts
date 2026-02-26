@@ -5,7 +5,6 @@ export interface MachineAssignment {
   id: string;
   contractId: string;
   machineId: string;
-  hourlyRate: number;
   workedHours: number;
   maintenanceCost: number;
   generatedIncome: number;
@@ -32,8 +31,8 @@ export const contractApi = {
     await api.delete(`/contracts/${id}`);
   },
 
-  assignMachine: async (contractId: string, machineId: string, hourlyRate: number): Promise<void> => {
-    await api.post(`/contracts/${contractId}/assign`, { machineId, hourlyRate });
+  assignMachine: async (contractId: string, machineId: string): Promise<void> => {
+    await api.post(`/contracts/${contractId}/assign`, { machineId });
   },
 
   unassignMachine: async (contractId: string, machineId: string): Promise<void> => {

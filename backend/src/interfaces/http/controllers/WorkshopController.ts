@@ -48,20 +48,11 @@ export class WorkshopController {
       // Convert string to enum
       const workOrderType = WorkOrderType[type as keyof typeof WorkOrderType];
 
-      // Parse date with time (handles both "2026-02-23" and "2026-02-23T10:30:00" formats)
-      const parseLocalDateTime = (dateStr: string): Date => {
-        if (!dateStr) return new Date();
-        
-        // If it contains 'T', it's a datetime-local input
-        if (dateStr.includes('T')) {
-          const [datePart, timePart] = dateStr.split('T');
-          const [year, month, day] = datePart.split('-').map(Number);
-          const [hours, minutes] = timePart.split(':').map(Number);
-          return new Date(year, month - 1, day, hours, minutes);
-        }
-        
-        // Otherwise it's just a date (legacy format)
-        const [year, month, day] = dateStr.split('-').map(Number);
+      // Parse date as local time (not UTC)
+      const parseLocalDate = (dateStr: string): Date => {
+        // Handle both formats: "2026-02-23" and "2026-02-23T00:00:00.000Z"
+        const datePart = dateStr.split('T')[0];
+        const [year, month, day] = datePart.split('-').map(Number);
         return new Date(year, month - 1, day);
       };
 
@@ -69,7 +60,7 @@ export class WorkshopController {
       await createWorkOrder.execute({
         machineId,
         type: workOrderType,
-        entryDate: parseLocalDateTime(entryDate),
+        entryDate: parseLocalDate(entryDate),
         sparePartsCost: Number(sparePartsCost),
         laborCost: Number(laborCost),
       });

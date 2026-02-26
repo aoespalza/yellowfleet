@@ -58,6 +58,31 @@ export class PrismaMachineRepository implements IMachineRepository {
   }
 
   async findAll(): Promise<Machine[]> {
+    // Liberar máquinas de contratos completados (solo si hay machines con IN_CONTRACT)
+    const machinesInContract = await prisma.machine.count({
+      where: { status: 'IN_CONTRACT' as any },
+    });
+    
+    if (machinesInContract > 0) {
+      const completedContracts = await prisma.contract.findMany({
+        where: { status: 'COMPLETED' },
+        include: { assignments: true },
+      });
+      
+      for (const contract of completedContracts) {
+        if (contract.assignments.length > 0) {
+          const machineIds = contract.assignments.map(a => a.machineId);
+          const result = await prisma.machine.updateMany({
+            where: { id: { in: machineIds }, status: 'IN_CONTRACT' as any },
+            data: { status: 'AVAILABLE' as any },
+          });
+          if (result.count > 0) {
+            console.log(`>>> Máquinas liberadas por contrato ${contract.code}: ${result.count}`);
+          }
+        }
+      }
+    }
+
     const prismaMachines = await prisma.machine.findMany();
 
     return prismaMachines.map((prismaMachine) =>

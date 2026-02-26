@@ -34,6 +34,7 @@ const initialFormData: MachineFormData = {
   acquisitionValue: 0,
   usefulLifeHours: 10000,
   currentLocation: '',
+  commercialValue: 0,
 };
 
 export function FleetPage() {
@@ -74,9 +75,10 @@ export function FleetPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    const numericFields = ['year', 'hourMeter', 'acquisitionValue', 'usefulLifeHours', 'commercialValue'];
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'year' || name === 'hourMeter' || name === 'acquisitionValue' || name === 'usefulLifeHours' 
+      [name]: numericFields.includes(name) 
         ? parseFloat(value) || 0 
         : value,
     }));
@@ -99,10 +101,21 @@ export function FleetPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // Preparar datos - asegurar tipos correctos
+      const submitData: any = {
+        ...formData,
+        // Convertir campos numéricos
+        year: Number(formData.year),
+        hourMeter: Number(formData.hourMeter),
+        acquisitionValue: Number(formData.acquisitionValue),
+        usefulLifeHours: Number(formData.usefulLifeHours),
+        commercialValue: formData.commercialValue ? Number(formData.commercialValue) : undefined,
+      };
+
       if (editingMachineId) {
-        await machineApi.update(editingMachineId, formData);
+        await machineApi.update(editingMachineId, submitData);
       } else {
-        await machineApi.create(formData);
+        await machineApi.create(submitData);
       }
       resetForm();
       fetchMachines();
@@ -125,6 +138,7 @@ export function FleetPage() {
       acquisitionValue: machine.acquisitionValue ?? 0,
       usefulLifeHours: machine.usefulLifeHours ?? 10000,
       currentLocation: machine.currentLocation ?? '',
+      commercialValue: machine.commercialValue ?? 0,
     });
     setEditingMachineId(machine.id);
     setShowForm(true);
@@ -362,6 +376,23 @@ export function FleetPage() {
                 />
               </div>
             </div>
+
+            {/* Información Económica / Leasing */}
+            <h3 className="form-section-title">Información Económica</h3>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Valor Comercial Hoy ($)</label>
+                <input
+                  type="number"
+                  name="commercialValue"
+                  value={formData.commercialValue || ''}
+                  onChange={handleInputChange}
+                  step="0.01"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
             <button type="submit" className="btn-submit">
               {editingMachineId ? 'Actualizar Máquina' : 'Crear Máquina'}
             </button>

@@ -56,6 +56,29 @@ export function ContractForm({ formData, onChange, onSubmit, onCancel, isEditing
             />
           </div>
           <div className="form-group">
+            <label>Plazo (meses)</label>
+            <input
+              type="number"
+              name="plazo"
+              value={formData.plazo || ''}
+              onChange={onChange}
+              placeholder="0"
+            />
+          </div>
+        </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label>Valor Mensual ($)</label>
+            <input
+              type="number"
+              name="monthlyValue"
+              value={formData.monthlyValue || ''}
+              onChange={onChange}
+              step="0.01"
+              placeholder="0.00"
+            />
+          </div>
+          <div className="form-group">
             <label>Fecha Fin</label>
             <input
               type="date"
@@ -68,7 +91,7 @@ export function ContractForm({ formData, onChange, onSubmit, onCancel, isEditing
         </div>
         <div className="form-row">
           <div className="form-group">
-            <label>Valor ($)</label>
+            <label>Valor Total ($)</label>
             <input
               type="number"
               name="value"
@@ -76,6 +99,8 @@ export function ContractForm({ formData, onChange, onSubmit, onCancel, isEditing
               onChange={onChange}
               required
               step="0.01"
+              placeholder="0.00"
+              readOnly
             />
           </div>
           <div className="form-group">

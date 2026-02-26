@@ -15,6 +15,7 @@ function AppNavigator() {
   const [currentPage, setCurrentPage] = useState<string>(() => {
     return localStorage.getItem('YF_PAGE') || 'dashboard';
   });
+  const [selectedContractId, setSelectedContractId] = useState<string | undefined>();
 
   // Limpiar el localStorage despues de leer
   useEffect(() => {
@@ -26,6 +27,11 @@ function AppNavigator() {
 
   const handleLogout = () => {
     logout();
+  };
+
+  const handleNavigate = (page: string, contractId?: string) => {
+    setSelectedContractId(contractId);
+    setCurrentPage(page);
   };
 
   return (
@@ -76,9 +82,9 @@ function AppNavigator() {
         </div>
       </nav>
       <main className="app-main">
-        {currentPage === 'dashboard' && <DashboardPage />}
+        {currentPage === 'dashboard' && <DashboardPage onNavigate={handleNavigate} />}
         {currentPage === 'fleet' && <FleetPage />}
-        {currentPage === 'contracts' && <ContractsPage />}
+        {currentPage === 'contracts' && <ContractsPage initialContractId={selectedContractId} />}
         {currentPage === 'workshop' && <WorkshopPage />}
         {currentPage === 'users' && <UsersPage />}
       </main>

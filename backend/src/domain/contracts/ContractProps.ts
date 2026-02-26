@@ -7,6 +7,8 @@ export interface ContractProps {
   startDate: Date;
   endDate: Date;
   value: number;
+  monthlyValue?: number;
+  plazo?: number;
   status: ContractStatus;
   description?: string;
   createdAt?: Date;

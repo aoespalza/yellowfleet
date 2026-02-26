@@ -18,7 +18,7 @@ function parseLocalDate(dateStr: string): Date {
 export class ContractsController {
   public async create(req: Request, res: Response): Promise<void> {
     try {
-      const { code, customer, startDate, endDate, value, description } = req.body;
+      const { code, customer, startDate, endDate, value, monthlyValue, plazo, description } = req.body;
       
       const createContract = new CreateContract(contractRepository);
       await createContract.execute({
@@ -27,6 +27,8 @@ export class ContractsController {
         startDate: parseLocalDate(startDate),
         endDate: parseLocalDate(endDate),
         value: Number(value),
+        monthlyValue: monthlyValue ? Number(monthlyValue) : undefined,
+        plazo: plazo ? Number(plazo) : undefined,
         description: description || '',
       });
       res.status(201).json({ message: 'Contract created successfully' });
@@ -39,9 +41,9 @@ export class ContractsController {
   public async assignMachine(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const { machineId, hourlyRate } = req.body;
+      const { machineId } = req.body;
       const assignMachine = new AssignMachineToContract(contractRepository);
-      await assignMachine.execute({ contractId: id, machineId, hourlyRate });
+      await assignMachine.execute({ contractId: id, machineId });
       res.status(200).json({ message: 'Machine assigned successfully' });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
@@ -122,6 +124,8 @@ export class ContractsController {
         startDate: c.startDate,
         endDate: c.endDate,
         value: c.value,
+        monthlyValue: c.monthlyValue,
+        plazo: c.plazo,
         status: c.status,
         description: c.description,
         createdAt: c.createdAt,
@@ -131,6 +135,7 @@ export class ContractsController {
       
       res.status(200).json(plainContracts);
     } catch (error) {
+      console.error('Error listing contracts:', error);
       const message = error instanceof Error ? error.message : 'Unknown error';
       res.status(400).json({ error: message });
     }
@@ -155,7 +160,7 @@ export class ContractsController {
   public async update(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const { code, customer, startDate, endDate, value, status, description } = req.body;
+      const { code, customer, startDate, endDate, value, monthlyValue, plazo, status, description } = req.body;
       
       const updateContract = new UpdateContract(contractRepository);
       await updateContract.execute(id, {
@@ -164,6 +169,8 @@ export class ContractsController {
         startDate: parseLocalDate(startDate),
         endDate: parseLocalDate(endDate),
         value: Number(value),
+        monthlyValue: monthlyValue ? Number(monthlyValue) : undefined,
+        plazo: plazo ? Number(plazo) : undefined,
         status,
         description: description || '',
       });

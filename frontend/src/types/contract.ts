@@ -7,6 +7,8 @@ export interface Contract {
   startDate: string;
   endDate: string;
   value: number;
+  monthlyValue?: number;
+  plazo?: number;
   status: ContractStatus;
   description: string;
   createdAt: string;
@@ -19,7 +21,9 @@ export interface ContractFormData {
   customer: string;
   startDate: string;
   endDate: string;
-  value: number;
+  value: string;
+  monthlyValue?: string;
+  plazo?: string;
   status: ContractStatus;
   description: string;
 }
