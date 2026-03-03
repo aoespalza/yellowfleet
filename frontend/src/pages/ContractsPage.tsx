@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { contractApi } from '../api/contractApi';
 import type { Contract, ContractFormData } from '../types/contract';
 import { ContractForm } from '../components/ContractForm';
@@ -6,6 +6,7 @@ import { ContractsTable } from '../components/ContractsTable';
 import { AssignMachineModal } from '../components/AssignMachineModal';
 import { AssignedMachinesModal } from '../components/AssignedMachinesModal';
 import { useAuth } from '../context/AuthContext';
+import { exportToExcel } from '../utils/exportExcel';
 import './ContractsPage.css';
 
 // Función para obtener la fecha local en formato YYYY-MM-DD
@@ -48,11 +49,14 @@ export function ContractsPage({ initialContractId }: ContractsPageProps) {
   const [filters, setFilters] = useState<Record<string, string>>({
     code: '',
     customer: '',
-    status: 'ACTIVE', // Default to active
+    status: '',
     startDate: '',
     endDate: '',
     value: '',
   });
+  
+  // Filtro especial para vencimiento
+  const [specialFilter, setSpecialFilter] = useState<string | null>(null);
 
   // Si se pasa un contractId inicial, abrir en modo vista
   useEffect(() => {
@@ -198,14 +202,35 @@ export function ContractsPage({ initialContractId }: ContractsPageProps) {
   const filteredContracts: Contract[] = contracts
     .filter((contract) => {
       const f = filters;
-      return (
+      const now = new Date();
+      const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const endDate = new Date(contract.endDate);
+      
+      // Filtros básicos
+      const basicFilter = 
         (f.code === '' || contract.code.toLowerCase().includes(f.code.toLowerCase())) &&
         (f.customer === '' || contract.customer.toLowerCase().includes(f.customer.toLowerCase())) &&
         (f.status === '' || contract.status === f.status) &&
         (f.startDate === '' || contract.startDate.includes(f.startDate)) &&
-        (f.endDate === '' || contract.endDate.includes(f.endDate)) &&
-        (f.value === '' || contract.value.toString().includes(f.value))
-      );
+        (f.value === '' || contract.value.toString().includes(f.value));
+      
+      // Filtro por fecha de fin
+      let dateFilter = true;
+      if (f.endDate !== '') {
+        dateFilter = contract.endDate.includes(f.endDate);
+      }
+      
+      // Filtros especiales
+      let specialFilterResult = true;
+      if (specialFilter === 'expiring') {
+        // Por vencer: activos que vencen en los próximos 30 días
+        specialFilterResult = contract.status === 'ACTIVE' && endDate <= in30Days && endDate >= now;
+      } else if (specialFilter === 'expired') {
+        // Vencidos: ya pasó la fecha de fin
+        specialFilterResult = endDate < now;
+      }
+      
+      return basicFilter && dateFilter && specialFilterResult;
     })
     .sort((a, b) => {
       // Sort by endDate - closest to expire first
@@ -216,6 +241,54 @@ export function ContractsPage({ initialContractId }: ContractsPageProps) {
 
   const handleAssignMachine = (contract: Contract) => {
     setAssignModal({ contractId: contract.id, contractCode: contract.code });
+  };
+
+  // KPIs
+  const contractStats = useMemo(() => {
+    const now = new Date();
+    const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    
+    const total = contracts.length;
+    const active = contracts.filter(c => c.status === 'ACTIVE').length;
+    const completed = contracts.filter(c => c.status === 'COMPLETED').length;
+    const expiringSoon = contracts.filter(c => {
+      if (c.status !== 'ACTIVE') return false;
+      const endDate = new Date(c.endDate);
+      return endDate <= in30Days && endDate >= now;
+    }).length;
+    const expired = contracts.filter(c => {
+      // Vencidos: ya pasó la fecha de fin (sin importar estado)
+      return new Date(c.endDate) < now;
+    }).length;
+    
+    return { total, active, completed, expiringSoon, expired };
+  }, [contracts]);
+
+  const handleKpiClick = (filterType: string) => {
+    switch (filterType) {
+      case 'total':
+        setFilters({ code: '', customer: '', status: '', startDate: '', endDate: '', value: '' });
+        setSpecialFilter(null);
+        break;
+      case 'active':
+        setFilters({ code: '', customer: '', status: 'ACTIVE', startDate: '', endDate: '', value: '' });
+        setSpecialFilter(null);
+        break;
+      case 'completed':
+        setFilters({ code: '', customer: '', status: 'COMPLETED', startDate: '', endDate: '', value: '' });
+        setSpecialFilter(null);
+        break;
+      case 'expiring':
+        // Filter by date range: now to in30Days (only active contracts)
+        setFilters({ code: '', customer: '', status: 'ACTIVE', startDate: '', endDate: '', value: '' });
+        setSpecialFilter('expiring');
+        break;
+      case 'expired':
+        // Show all contracts that have expired (endDate < now)
+        setFilters({ code: '', customer: '', status: '', startDate: '', endDate: '', value: '' });
+        setSpecialFilter('expired');
+        break;
+    }
   };
 
   return (
@@ -237,6 +310,65 @@ export function ContractsPage({ initialContractId }: ContractsPageProps) {
             {showForm ? 'Cancelar' : '+ Nuevo Contrato'}
           </button>
         )}
+        <button 
+          className="btn-export"
+          onClick={() => exportToExcel(
+            contracts,
+            [
+              { key: 'code', header: 'Código' },
+              { key: 'customer', header: 'Cliente' },
+              { key: 'startDate', header: 'Fecha Inicio' },
+              { key: 'endDate', header: 'Fecha Fin' },
+              { key: 'value', header: 'Valor' },
+              { key: 'monthlyValue', header: 'Valor Mensual' },
+              { key: 'plazo', header: 'Plazo (meses)' },
+              { key: 'status', header: 'Estado' },
+            ],
+            'contratos',
+            'Contratos'
+          )}
+        >
+          📥 Exportar Excel
+        </button>
+      </div>
+
+      {/* KPIs */}
+      <div className="contracts-kpis">
+        <div className="kpi-card" onClick={() => handleKpiClick('total')} style={{ cursor: 'pointer' }}>
+          <div className="kpi-icon">📄</div>
+          <div className="kpi-content">
+            <span className="kpi-value">{contractStats.total}</span>
+            <span className="kpi-label">Total Contratos</span>
+          </div>
+        </div>
+        <div className="kpi-card kpi-card--active" onClick={() => handleKpiClick('active')} style={{ cursor: 'pointer' }}>
+          <div className="kpi-icon">✅</div>
+          <div className="kpi-content">
+            <span className="kpi-value">{contractStats.active}</span>
+            <span className="kpi-label">Activos</span>
+          </div>
+        </div>
+        <div className="kpi-card kpi-card--completed" onClick={() => handleKpiClick('completed')} style={{ cursor: 'pointer' }}>
+          <div className="kpi-icon">🏁</div>
+          <div className="kpi-content">
+            <span className="kpi-value">{contractStats.completed}</span>
+            <span className="kpi-label">Cerrados</span>
+          </div>
+        </div>
+        <div className="kpi-card kpi-card--warning" onClick={() => handleKpiClick('expiring')} style={{ cursor: 'pointer' }}>
+          <div className="kpi-icon">⚠️</div>
+          <div className="kpi-content">
+            <span className="kpi-value">{contractStats.expiringSoon}</span>
+            <span className="kpi-label">Por Vencer (30 días)</span>
+          </div>
+        </div>
+        <div className="kpi-card kpi-card--danger" onClick={() => handleKpiClick('expired')} style={{ cursor: 'pointer' }}>
+          <div className="kpi-icon">🔴</div>
+          <div className="kpi-content">
+            <span className="kpi-value">{contractStats.expired}</span>
+            <span className="kpi-label">Vencidos</span>
+          </div>
+        </div>
       </div>
 
       {showForm && (

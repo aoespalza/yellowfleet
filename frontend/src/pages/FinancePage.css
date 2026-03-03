@@ -249,6 +249,27 @@
 .finance-leasing-header {
   display: flex;
   justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-export {
+  padding: 10px 16px;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.btn-export:hover {
+  background: #059669;
 }
 
 .btn-icon {

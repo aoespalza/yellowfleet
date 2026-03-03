@@ -5,6 +5,7 @@ import type { Machine, MachineFormData } from '../types/machine';
 import { MACHINE_TYPES } from '../types/machine';
 import { StatusBadge } from '../components/StatusBadge';
 import { useAuth } from '../context/AuthContext';
+import { exportToExcel } from '../utils/exportExcel';
 import './FleetPage.css';
 
 const getTypeLabel = (typeValue: string) => {
@@ -199,21 +200,45 @@ export function FleetPage() {
     <div className="fleet-page">
       <div className="fleet-header">
         <h1>Gestión de Flota</h1>
-        {user?.role !== 'OPERATOR' && (
+        <div className="header-actions">
           <button 
-            className="btn-primary"
-            onClick={() => {
-              if (showForm && editingMachineId) {
-                resetForm();
-              } else {
-                setShowForm(!showForm);
-                window.scrollTo(0, 0);
-              }
-            }}
+            className="btn-export"
+            onClick={() => exportToExcel(
+              machines,
+              [
+                { key: 'code', header: 'Código' },
+                { key: 'type', header: 'Tipo' },
+                { key: 'brand', header: 'Marca' },
+                { key: 'model', header: 'Modelo' },
+                { key: 'year', header: 'Año' },
+                { key: 'serialNumber', header: 'N° Serie' },
+                { key: 'hourMeter', header: 'Horómetro' },
+                { key: 'status', header: 'Estado' },
+                { key: 'currentLocation', header: 'Ubicación' },
+                { key: 'acquisitionValue', header: 'Valor Adquisición' },
+              ],
+              'flota_maquinaria',
+              'Flota'
+            )}
           >
-            {showForm ? 'Cancelar' : '+ Nueva Máquina'}
+            📥 Exportar Excel
           </button>
-        )}
+          {user?.role !== 'OPERATOR' && (
+            <button 
+              className="btn-primary"
+              onClick={() => {
+                if (showForm && editingMachineId) {
+                  resetForm();
+                } else {
+                  setShowForm(!showForm);
+                  window.scrollTo(0, 0);
+                }
+              }}
+            >
+              {showForm ? 'Cancelar' : '+ Nueva Máquina'}
+            </button>
+          )}
+        </div>
       </div>
 
       {showForm && (

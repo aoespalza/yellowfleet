@@ -3,6 +3,7 @@ import { financeApi, type FinanceDashboard, type MachineProfitability, type Mach
 import { KPICard } from '../components/KPICard';
 import { KPIGrid } from '../components/KPIGrid';
 import type { KPIMetric } from '../types/dashboard';
+import { exportToExcel } from '../utils/exportExcel';
 import './FinancePage.css';
 
 function formatCurrency(value: number): string {
@@ -663,27 +664,51 @@ export function FinancePage() {
         {activeTab === 'leasing' && (
           <div className="finance-leasing">
             <div className="finance-leasing-header">
-              <button 
-                className="btn btn-primary"
-                onClick={() => {
-                  setEditingLeasing(null);
-                  setLeasingForm({
-                    machineId: '',
-                    purchaseValue: 0,
-                    currentBalance: 0,
-                    monthlyPayment: 0,
-                    entity: '',
-                    startDate: '',
-                    endDate: '',
-                    totalPayments: 0,
-                    interestRate: undefined,
-                    notes: '',
-                  });
-                  setShowLeasingModal(true);
-                }}
-              >
-                + Nuevo Leasing
-              </button>
+              <div className="header-actions">
+                <button 
+                  className="btn-export"
+                  onClick={() => exportToExcel(
+                    leasings,
+                    [
+                      { key: 'machineCode', header: 'Máquina' },
+                      { key: 'entity', header: 'Entidad' },
+                      { key: 'purchaseValue', header: 'Valor Compra' },
+                      { key: 'currentBalance', header: 'Saldo Pendiente' },
+                      { key: 'monthlyPayment', header: 'Cuota Mensual' },
+                      { key: 'paidPayments', header: 'Cuotas Pagadas' },
+                      { key: 'totalPayments', header: 'Total Cuotas' },
+                      { key: 'startDate', header: 'Fecha Inicio' },
+                      { key: 'endDate', header: 'Fecha Fin' },
+                      { key: 'status', header: 'Estado' },
+                    ],
+                    'leasing',
+                    'Leasing'
+                  )}
+                >
+                  📥 Exportar Excel
+                </button>
+                <button 
+                  className="btn btn-primary"
+                  onClick={() => {
+                    setEditingLeasing(null);
+                    setLeasingForm({
+                      machineId: '',
+                      purchaseValue: 0,
+                      currentBalance: 0,
+                      monthlyPayment: 0,
+                      entity: '',
+                      startDate: '',
+                      endDate: '',
+                      totalPayments: 0,
+                      interestRate: undefined,
+                      notes: '',
+                    });
+                    setShowLeasingModal(true);
+                  }}
+                >
+                  + Nuevo Leasing
+                </button>
+              </div>
             </div>
 
             {leasingSummary && (

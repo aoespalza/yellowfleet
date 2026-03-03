@@ -6,6 +6,7 @@ import type { Machine } from '../types/machine';
 import { WorkOrderForm } from '../components/WorkOrderForm';
 import { WorkOrderLogs } from '../components/WorkOrderLogs';
 import { useAuth } from '../context/AuthContext';
+import { exportToExcel } from '../utils/exportExcel';
 import './WorkshopPage.css';
 
 // Función para obtener la fecha local en formato YYYY-MM-DD
@@ -327,21 +328,45 @@ export function WorkshopPage() {
     <div className="workshop-page">
       <div className="page-header">
         <h1>Gestión de Taller</h1>
-        {user?.role !== 'OPERATOR' && (
-          <button
-            className="btn-primary"
-            onClick={() => {
-              if (showForm && editingWorkOrderId) {
-                resetForm();
-              } else {
-                setShowForm(!showForm);
-                window.scrollTo(0, 0);
-              }
-            }}
+        <div className="header-actions">
+          <button 
+            className="btn-export"
+            onClick={() => exportToExcel(
+              workOrders,
+              [
+                { key: 'id', header: 'ID' },
+                { key: 'machineCode', header: 'Máquina' },
+                { key: 'type', header: 'Tipo' },
+                { key: 'status', header: 'Estado' },
+                { key: 'entryDate', header: 'Fecha Entrada' },
+                { key: 'exitDate', header: 'Fecha Salida' },
+                { key: 'sparePartsCost', header: 'Repuestos' },
+                { key: 'laborCost', header: 'Mano de Obra' },
+                { key: 'totalCost', header: 'Costo Total' },
+                { key: 'downtimeHours', header: 'Horas Paro' },
+              ],
+              'ordenes_trabajo',
+              'Taller'
+            )}
           >
-            {showForm ? 'Cancelar' : '+ Nueva Orden'}
+            📥 Exportar Excel
           </button>
-        )}
+          {user?.role !== 'OPERATOR' && (
+            <button
+              className="btn-primary"
+              onClick={() => {
+                if (showForm && editingWorkOrderId) {
+                  resetForm();
+                } else {
+                  setShowForm(!showForm);
+                  window.scrollTo(0, 0);
+                }
+              }}
+            >
+              {showForm ? 'Cancelar' : '+ Nueva Orden'}
+            </button>
+          )}
+        </div>
       </div>
 
       {loading ? (
