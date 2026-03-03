@@ -1,5 +1,6 @@
 import type { Contract } from '../types/contract';
 import { ContractStatusBadge } from './ContractStatusBadge';
+import { ContractExpiryIndicator } from './Contracts/ContractExpiryIndicator';
 
 interface ContractsTableProps {
   contracts: Contract[];
@@ -100,6 +101,9 @@ export function ContractsTable({
               </td>
               <td>
                 <ContractStatusBadge status={contract.status} />
+              </td>
+              <td>
+                <ContractExpiryIndicator endDate={contract.endDate} status={contract.status} />
               </td>
               <td>
                 <div className="action-buttons">

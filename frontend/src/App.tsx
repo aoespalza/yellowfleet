@@ -8,6 +8,7 @@ import { WorkshopPage } from './pages/WorkshopPage';
 import { MachineHistoryPage } from './pages/MachineHistoryPage';
 import { UsersPage } from './pages/UsersPage';
 import { LoginPage } from './pages/LoginPage';
+import { FinancePage } from './pages/FinancePage';
 import './App.css';
 
 function AppNavigator() {
@@ -63,6 +64,12 @@ function AppNavigator() {
           >
             Taller
           </button>
+          <button
+            className={`app-nav__link ${currentPage === 'finance' ? 'app-nav__link--active' : ''}`}
+            onClick={() => setCurrentPage('finance')}
+          >
+            Finanzas
+          </button>
           {user?.role === 'ADMIN' && (
             <button
               className={`app-nav__link ${currentPage === 'users' ? 'app-nav__link--active' : ''}`}
@@ -86,6 +93,7 @@ function AppNavigator() {
         {currentPage === 'fleet' && <FleetPage />}
         {currentPage === 'contracts' && <ContractsPage initialContractId={selectedContractId} />}
         {currentPage === 'workshop' && <WorkshopPage />}
+        {currentPage === 'finance' && <FinancePage />}
         {currentPage === 'users' && <UsersPage />}
       </main>
     </div>

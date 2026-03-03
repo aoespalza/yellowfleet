@@ -48,6 +48,12 @@ enum LegalDocumentType {
   TECNICO_MECANICA
 }
 
+enum LeasingStatus {
+  ACTIVE
+  PAID
+  CANCELLED
+}
+
 model LegalDocument {
   id              String            @id @default(uuid())
   machineId       String
@@ -92,6 +98,7 @@ model Machine {
   assignments      MachineAssignment[]
   hourMeterLogs    HourMeterLog[]
   legalDocuments   LegalDocument[]
+  leasing          Leasing?
 }
 
 
@@ -213,4 +220,37 @@ model HourMeterLog {
   createdAt  DateTime @default(now())
   machine    Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
   user       User     @relation(fields: [userId], references: [id])
+}
+
+model Leasing {
+  id              String        @id @default(uuid())
+  machineId       String        @unique
+  purchaseValue   Float         // Valor real de compra de la máquina
+  currentBalance  Float         // Saldo capital pendiente
+  monthlyPayment  Float         // Valor de cuota mensual
+  entity          String        // Entidad que financia (banco, empresa de leasing)
+  startDate       DateTime      // Fecha de inicio del leasing
+  endDate         DateTime      // Fecha de término del leasing
+  totalPayments   Int           // Total de cuotas
+  paidPayments    Int           // Cuotas pagadas
+  remainingPayments Int         // Cuotas pendientes
+  interestRate    Float?        // Tasa de interés anual
+  status          LeasingStatus
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  machine         Machine       @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  payments        LeasingPayment[]
+}
+
+model LeasingPayment {
+  id              String        @id @default(uuid())
+  leasingId       String
+  paymentDate     DateTime      // Fecha del pago
+  amount          Float         // Monto pagado
+  paymentsCount   Int           // Número de cuotas pagadas en este pago
+  totalPaidAfter  Int           // Total de cuotas pagadas después de este pago
+  notes           String?
+  createdAt       DateTime      @default(now())
+  leasing         Leasing       @relation(fields: [leasingId], references: [id], onDelete: Cascade)
 }

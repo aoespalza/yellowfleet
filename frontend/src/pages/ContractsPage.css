@@ -280,3 +280,37 @@
 .btn-clear-filters:hover {
   background: #dc2626;
 }
+
+/* Contract Expiry Indicator */
+.expiry-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.expiry-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: block;
+}
+
+.expiry-indicator--success .expiry-dot {
+  background-color: #22c55e;
+}
+
+.expiry-indicator--warning .expiry-dot {
+  background-color: #eab308;
+}
+
+.expiry-indicator--danger .expiry-dot {
+  background-color: #ef4444;
+}
+
+.expiry-indicator--expired .expiry-dot {
+  background-color: #991b1b;
+}
+
+.expiry-indicator--na .expiry-dot {
+  background-color: #9ca3af;
+}

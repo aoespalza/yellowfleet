@@ -12,6 +12,7 @@ import ContractsRoutes from './interfaces/http/routes/ContractsRoutes';
 import WorkshopRoutes from './interfaces/http/routes/WorkshopRoutes';
 import FinanceRoutes from './interfaces/http/routes/FinanceRoutes';
 import AuthRoutes from './interfaces/http/routes/AuthRoutes';
+import RoleRoutes from './interfaces/http/routes/RoleRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -40,6 +41,7 @@ app.use('/api/fleet', FleetRoutes);
 app.use('/api/contracts', ContractsRoutes);
 app.use('/api/workshop', WorkshopRoutes);
 app.use('/api/finance', FinanceRoutes);
+app.use('/api/roles', RoleRoutes);
 
 
 // Global error handler

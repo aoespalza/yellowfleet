@@ -48,7 +48,7 @@ export function ContractsPage({ initialContractId }: ContractsPageProps) {
   const [filters, setFilters] = useState<Record<string, string>>({
     code: '',
     customer: '',
-    status: '',
+    status: 'ACTIVE', // Default to active
     startDate: '',
     endDate: '',
     value: '',
@@ -195,17 +195,24 @@ export function ContractsPage({ initialContractId }: ContractsPageProps) {
     });
   };
 
-  const filteredContracts: Contract[] = contracts.filter((contract) => {
-    const f = filters;
-    return (
-      (f.code === '' || contract.code.toLowerCase().includes(f.code.toLowerCase())) &&
-      (f.customer === '' || contract.customer.toLowerCase().includes(f.customer.toLowerCase())) &&
-      (f.status === '' || contract.status === f.status) &&
-      (f.startDate === '' || contract.startDate.includes(f.startDate)) &&
-      (f.endDate === '' || contract.endDate.includes(f.endDate)) &&
-      (f.value === '' || contract.value.toString().includes(f.value))
-    );
-  });
+  const filteredContracts: Contract[] = contracts
+    .filter((contract) => {
+      const f = filters;
+      return (
+        (f.code === '' || contract.code.toLowerCase().includes(f.code.toLowerCase())) &&
+        (f.customer === '' || contract.customer.toLowerCase().includes(f.customer.toLowerCase())) &&
+        (f.status === '' || contract.status === f.status) &&
+        (f.startDate === '' || contract.startDate.includes(f.startDate)) &&
+        (f.endDate === '' || contract.endDate.includes(f.endDate)) &&
+        (f.value === '' || contract.value.toString().includes(f.value))
+      );
+    })
+    .sort((a, b) => {
+      // Sort by endDate - closest to expire first
+      const dateA = new Date(a.endDate).getTime();
+      const dateB = new Date(b.endDate).getTime();
+      return dateA - dateB;
+    });
 
   const handleAssignMachine = (contract: Contract) => {
     setAssignModal({ contractId: contract.id, contractCode: contract.code });
