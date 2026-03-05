@@ -115,7 +115,7 @@ export interface LeasingPaymentFormData {
 export interface LeasingPaymentItem {
   id: string;
   leasingId: string;
-  paymentDate: string;
+  paymentDate: string | null;
   amount: number;
   paymentsCount: number;
   totalPaidAfter: number;
@@ -609,7 +609,7 @@ export class FinanceService {
     return payments.map(p => ({
       id: p.id,
       leasingId: p.leasingId,
-      paymentDate: p.paymentDate.toISOString(),
+      paymentDate: p.paymentDate?.toISOString() || null,
       amount: p.amount,
       paymentsCount: p.paymentsCount,
       totalPaidAfter: p.totalPaidAfter,
@@ -658,7 +658,7 @@ export class FinanceService {
     return {
       id: payment.id,
       leasingId: payment.leasingId,
-      paymentDate: payment.paymentDate.toISOString(),
+      paymentDate: payment.paymentDate?.toISOString() || null,
       amount: payment.amount,
       paymentsCount: payment.paymentsCount,
       totalPaidAfter: payment.totalPaidAfter,

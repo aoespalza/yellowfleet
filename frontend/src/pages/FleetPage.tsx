@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { machineApi } from '../api/machineApi';
+import { operatorApi } from '../api/operatorApi';
 import type { Machine, MachineFormData } from '../types/machine';
+import type { Operator } from '../types/operator';
 import { MACHINE_TYPES } from '../types/machine';
 import { StatusBadge } from '../components/StatusBadge';
 import { useAuth } from '../context/AuthContext';
@@ -41,6 +43,7 @@ const initialFormData: MachineFormData = {
 export function FleetPage() {
   const { user } = useAuth();
   const [machines, setMachines] = useState<Machine[]>([]);
+  const [operators, setOperators] = useState<Operator[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingMachineId, setEditingMachineId] = useState<string | null>(null);
@@ -51,18 +54,23 @@ export function FleetPage() {
     code: '',
     type: '',
     brand: '',
-    model: '',
-    year: '',
-    hourMeter: '',
+    serialNumber: '',
     location: '',
     status: '',
+    operatorId: '',
+    acquisitionValue: '',
+    commercialValue: '',
   });
 
   const fetchMachines = async () => {
     try {
       setLoading(true);
-      const data = await machineApi.getAll();
-      setMachines(data);
+      const [machinesData, operatorsData] = await Promise.all([
+        machineApi.getAll(),
+        operatorApi.getAll(true), // Solo operadores activos
+      ]);
+      setMachines(machinesData);
+      setOperators(operatorsData);
     } catch (error) {
       console.error('Error fetching machines:', error);
     } finally {
@@ -174,11 +182,10 @@ export function FleetPage() {
       code: '',
       type: '',
       brand: '',
-      model: '',
-      year: '',
-      hourMeter: '',
+      serialNumber: '',
       location: '',
       status: '',
+      operatorId: '',
     });
   };
 
@@ -188,11 +195,10 @@ export function FleetPage() {
       (f.code === '' || machine.code.toLowerCase().includes(f.code.toLowerCase())) &&
       (f.type === '' || machine.type === f.type) &&
       (f.brand === '' || machine.brand.toLowerCase().includes(f.brand.toLowerCase())) &&
-      (f.model === '' || machine.model.toLowerCase().includes(f.model.toLowerCase())) &&
-      (f.year === '' || machine.year.toString().includes(f.year)) &&
-      (f.hourMeter === '' || String(machine.hourMeter || '').includes(f.hourMeter)) &&
+      (f.serialNumber === '' || (machine.serialNumber || '').toLowerCase().includes(f.serialNumber.toLowerCase())) &&
       (f.location === '' || (machine.currentLocation || '').toLowerCase().includes(f.location.toLowerCase())) &&
-      (f.status === '' || machine.status === f.status)
+      (f.status === '' || machine.status === f.status) &&
+      (f.operatorId === '' || (machine as any).currentOperatorId === f.operatorId)
     );
   });
 
@@ -209,13 +215,11 @@ export function FleetPage() {
                 { key: 'code', header: 'Código' },
                 { key: 'type', header: 'Tipo' },
                 { key: 'brand', header: 'Marca' },
-                { key: 'model', header: 'Modelo' },
-                { key: 'year', header: 'Año' },
-                { key: 'serialNumber', header: 'N° Serie' },
-                { key: 'hourMeter', header: 'Horómetro' },
+                { key: 'serialNumber', header: 'Placa/Serie' },
                 { key: 'status', header: 'Estado' },
                 { key: 'currentLocation', header: 'Ubicación' },
                 { key: 'acquisitionValue', header: 'Valor Adquisición' },
+                { key: 'commercialValue', header: 'Valor Comercial' },
               ],
               'flota_maquinaria',
               'Flota'
@@ -470,32 +474,28 @@ export function FleetPage() {
                 <th>
                   <input
                     type="text"
-                    name="model"
-                    placeholder="Modelo"
-                    value={filters.model}
+                    name="serialNumber"
+                    placeholder="Placa/Serie"
+                    value={filters.serialNumber || ''}
                     onChange={handleFilterChange}
                     className="filter-input"
                   />
                 </th>
                 <th>
-                  <input
-                    type="text"
-                    name="year"
-                    placeholder="Año"
-                    value={filters.year}
-                    onChange={handleFilterChange}
-                    className="filter-input"
-                  />
-                </th>
-                <th>
-                  <input
-                    type="text"
-                    name="hourMeter"
-                    placeholder="Horas"
-                    value={filters.hourMeter}
-                    onChange={handleFilterChange}
-                    className="filter-input"
-                  />
+                  <div className="th-with-filter">
+                    <span>Operador</span>
+                    <select
+                      name="operatorId"
+                      value={filters.operatorId}
+                      onChange={handleFilterChange}
+                      className="filter-input"
+                    >
+                      <option value="">Todos</option>
+                      {operators.map(op => (
+                        <option key={op.id} value={op.id}>{op.name}</option>
+                      ))}
+                    </select>
+                  </div>
                 </th>
                 <th>
                   <input
@@ -523,6 +523,26 @@ export function FleetPage() {
                   </select>
                 </th>
                 <th>
+                  <input
+                    type="text"
+                    name="acquisitionValue"
+                    placeholder="Valor Adq."
+                    value={filters.acquisitionValue}
+                    onChange={handleFilterChange}
+                    className="filter-input"
+                  />
+                </th>
+                <th>
+                  <input
+                    type="text"
+                    name="commercialValue"
+                    placeholder="Valor Com."
+                    value={filters.commercialValue}
+                    onChange={handleFilterChange}
+                    className="filter-input"
+                  />
+                </th>
+                <th>
                   <button onClick={clearFilters} className="btn-clear-filters" title="Limpiar filtros">
                     ✕
                   </button>
@@ -539,16 +559,23 @@ export function FleetPage() {
                   </td>
                   <td>{getTypeLabel(machine.type)}</td>
                   <td>{machine.brand}</td>
-                  <td>{machine.model}</td>
-                  <td>{machine.year}</td>
+                  <td>{machine.serialNumber}</td>
                   <td>
-                    {machine.hourMeter != null
-                      ? Number(machine.hourMeter).toFixed(2)
-                      : '—'}
+                    {operators.find(o => o.id === (machine as any).currentOperatorId)?.name || '—'}
                   </td>
                   <td>{machine.currentLocation}</td>
                   <td>
                     <StatusBadge status={machine.status} />
+                  </td>
+                  <td>
+                    {machine.acquisitionValue != null
+                      ? Number(machine.acquisitionValue).toLocaleString('es-CL', { style: 'currency', currency: 'CLP' })
+                      : '—'}
+                  </td>
+                  <td>
+                    {machine.commercialValue != null
+                      ? Number(machine.commercialValue).toLocaleString('es-CL', { style: 'currency', currency: 'CLP' })
+                      : '—'}
                   </td>
                   <td>
                     <div className="action-buttons">

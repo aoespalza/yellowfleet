@@ -45,17 +45,17 @@ export function ContractsPage({ initialContractId }: ContractsPageProps) {
   const [assignModal, setAssignModal] = useState<{ contractId: string; contractCode: string } | null>(null);
   const [assignedMachinesModal, setAssignedMachinesModal] = useState<{ contractId: string; contractCode: string } | null>(null);
 
-  // Filtros
+  // Filtros - iniciar filtrando por activos
   const [filters, setFilters] = useState<Record<string, string>>({
     code: '',
     customer: '',
-    status: '',
+    status: 'ACTIVE',
     startDate: '',
     endDate: '',
     value: '',
   });
   
-  // Filtro especial para vencimiento
+  // Filtro especial para vencimiento - iniciar sin filtro especial
   const [specialFilter, setSpecialFilter] = useState<string | null>(null);
 
   // Si se pasa un contractId inicial, abrir en modo vista
@@ -84,7 +84,8 @@ export function ContractsPage({ initialContractId }: ContractsPageProps) {
   const fetchContracts = async () => {
     try {
       setLoading(true);
-      const data = await contractApi.getAll();
+      // Cargar todos los contratos para calcular KPIs correctamente
+      const data = await contractApi.getAll(true);
       setContracts(data);
     } catch (error) {
       console.error('Error fetching contracts:', error);
@@ -279,12 +280,10 @@ export function ContractsPage({ initialContractId }: ContractsPageProps) {
         setSpecialFilter(null);
         break;
       case 'expiring':
-        // Filter by date range: now to in30Days (only active contracts)
         setFilters({ code: '', customer: '', status: 'ACTIVE', startDate: '', endDate: '', value: '' });
         setSpecialFilter('expiring');
         break;
       case 'expired':
-        // Show all contracts that have expired (endDate < now)
         setFilters({ code: '', customer: '', status: '', startDate: '', endDate: '', value: '' });
         setSpecialFilter('expired');
         break;
@@ -293,43 +292,45 @@ export function ContractsPage({ initialContractId }: ContractsPageProps) {
 
   return (
     <div className="contracts-page">
-      <div className="page-header">
+      <div className="fleet-header">
         <h1>Gestión de Contratos</h1>
-        {user?.role !== 'OPERATOR' && (
-          <button
-            className="btn-primary"
-            onClick={() => {
-              if (showForm && editingContractId) {
-                resetForm();
-              } else {
-                setShowForm(!showForm);
-                window.scrollTo(0, 0);
-              }
-            }}
+        <div className="header-actions">
+          <button 
+            className="btn-export"
+            onClick={() => exportToExcel(
+              contracts,
+              [
+                { key: 'code', header: 'Código' },
+                { key: 'customer', header: 'Cliente' },
+                { key: 'startDate', header: 'Fecha Inicio' },
+                { key: 'endDate', header: 'Fecha Fin' },
+                { key: 'value', header: 'Valor' },
+                { key: 'monthlyValue', header: 'Valor Mensual' },
+                { key: 'plazo', header: 'Plazo (meses)' },
+                { key: 'status', header: 'Estado' },
+              ],
+              'contratos',
+              'Contratos'
+            )}
           >
-            {showForm ? 'Cancelar' : '+ Nuevo Contrato'}
+            📥 Exportar Excel
           </button>
-        )}
-        <button 
-          className="btn-export"
-          onClick={() => exportToExcel(
-            contracts,
-            [
-              { key: 'code', header: 'Código' },
-              { key: 'customer', header: 'Cliente' },
-              { key: 'startDate', header: 'Fecha Inicio' },
-              { key: 'endDate', header: 'Fecha Fin' },
-              { key: 'value', header: 'Valor' },
-              { key: 'monthlyValue', header: 'Valor Mensual' },
-              { key: 'plazo', header: 'Plazo (meses)' },
-              { key: 'status', header: 'Estado' },
-            ],
-            'contratos',
-            'Contratos'
+          {user?.role !== 'OPERATOR' && (
+            <button
+              className="btn-primary"
+              onClick={() => {
+                if (showForm && editingContractId) {
+                  resetForm();
+                } else {
+                  setShowForm(!showForm);
+                  window.scrollTo(0, 0);
+                }
+              }}
+            >
+              {showForm ? 'Cancelar' : '+ Nuevo Contrato'}
+            </button>
           )}
-        >
-          📥 Exportar Excel
-        </button>
+        </div>
       </div>
 
       {/* KPIs */}

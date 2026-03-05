@@ -20,6 +20,7 @@ export interface MachineProps {
   usefulLifeHours: number;
   status: MachineStatus;
   currentLocation?: string;
+  currentOperatorId?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -38,6 +39,7 @@ export class Machine {
   readonly usefulLifeHours: number;
   private _status: MachineStatus;
   private _currentLocation?: string;
+  readonly currentOperatorId?: string | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 
@@ -55,8 +57,13 @@ export class Machine {
     this.usefulLifeHours = props.usefulLifeHours;
     this._status = props.status;
     this._currentLocation = props.currentLocation;
+    this.currentOperatorId = props.currentOperatorId;
     this.createdAt = props.createdAt || new Date();
     this.updatedAt = props.updatedAt || new Date();
+  }
+
+  static restore(props: MachineProps): Machine {
+    return new Machine(props);
   }
 
   get hourMeter(): number {
@@ -127,6 +134,7 @@ export class Machine {
       usefulLifeHours: this.usefulLifeHours,
       status: this._status,
       currentLocation: this._currentLocation,
+      currentOperatorId: this.currentOperatorId,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };

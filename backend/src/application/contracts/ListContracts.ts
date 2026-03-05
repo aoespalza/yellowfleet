@@ -4,7 +4,7 @@ import { Contract } from '../../domain/contracts/Contract';
 export class ListContracts {
   constructor(private contractRepository: IContractRepository) {}
 
-  async execute(): Promise<Contract[]> {
-    return this.contractRepository.findAll();
+  async execute(includeAll: boolean = false): Promise<Contract[]> {
+    return this.contractRepository.findAll(!includeAll);
   }
 }

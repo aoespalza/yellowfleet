@@ -6,6 +6,7 @@ import WorkshopRoutes from './routes/WorkshopRoutes';
 import FinanceRoutes from './routes/FinanceRoutes';
 import AuthRoutes from './routes/AuthRoutes';
 import RoleRoutes from './routes/RoleRoutes';
+import OperatorRoutes from './routes/OperatorRoutes';
 import path from 'path';
 
 const app = express();

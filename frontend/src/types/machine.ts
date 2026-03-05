@@ -44,6 +44,8 @@ export interface Machine {
   hoursSinceLastMaintenance?: number;
   maintenanceIntervalHours?: number;
   lastMaintenanceDate?: string;
+  // Operador actual
+  currentOperatorId?: string | null;
   status: MachineStatus;
   currentLocation: null;
   commercialValue?: number;

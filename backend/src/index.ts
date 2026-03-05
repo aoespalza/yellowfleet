@@ -2,7 +2,9 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import cron from 'node-cron';
 import { connectDatabase } from './infrastructure/database/prisma';
+import { notificationService } from './infrastructure/notification/notificationService';
 
 
 
@@ -13,6 +15,8 @@ import WorkshopRoutes from './interfaces/http/routes/WorkshopRoutes';
 import FinanceRoutes from './interfaces/http/routes/FinanceRoutes';
 import AuthRoutes from './interfaces/http/routes/AuthRoutes';
 import RoleRoutes from './interfaces/http/routes/RoleRoutes';
+import NotificationRoutes from './interfaces/http/routes/NotificationRoutes';
+import OperatorRoutes from './interfaces/http/routes/OperatorRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -42,6 +46,8 @@ app.use('/api/contracts', ContractsRoutes);
 app.use('/api/workshop', WorkshopRoutes);
 app.use('/api/finance', FinanceRoutes);
 app.use('/api/roles', RoleRoutes);
+app.use('/api/notifications', NotificationRoutes);
+app.use('/api/operators', OperatorRoutes);
 
 
 // Global error handler
@@ -52,6 +58,23 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 async function start() {
   await connectDatabase();
+
+  // Programar notificaciones automáticas - todos los días a las 8:00 AM
+  cron.schedule('0 8 * * *', async () => {
+    console.log('[CRON] Ejecutando verificaciones de notificaciones automáticas...');
+    try {
+      const result = await notificationService.runAllChecks();
+      console.log('[CRON] Resultado de notificaciones:', {
+        contracts: result.contracts.sent,
+        leasing: result.leasing.sent,
+        documents: result.documents.sent,
+        workOrders: result.workOrders.sent
+      });
+    } catch (error) {
+      console.error('[CRON] Error en notificaciones automáticas:', error);
+    }
+  });
+  console.log('[CRON] Notificaciones programadas diariamente a las 8:00 AM');
 
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

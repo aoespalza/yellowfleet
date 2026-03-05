@@ -148,44 +148,17 @@ export class PrismaContractRepository implements IContractRepository {
     return contract;
   }
 
-  async findAll(): Promise<Contract[]> {
+  async findAll(activeOnly: boolean = true): Promise<Contract[]> {
+    // Check and expire contracts first
+    await this.expireContracts();
+
     const prismaContracts = await prisma.contract.findMany({
+      where: activeOnly ? { status: 'ACTIVE' } : undefined,
       include: { assignments: true },
+      orderBy: { endDate: 'asc' },
     });
 
-    // Marcar contratos expirados (la liberación de máquinas se hace en PrismaMachineRepository)
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    
-    for (const prismaContract of prismaContracts) {
-      const endDate = new Date(prismaContract.endDate);
-      endDate.setHours(0, 0, 0, 0);
-      const statusStr = String(prismaContract.status);
-      
-      if (endDate < now && statusStr === 'ACTIVE') {
-        console.log('>>> Expirando contrato:', prismaContract.code);
-        // Liberar máquinas asignadas
-        const machineIds = prismaContract.assignments.map(a => a.machineId);
-        if (machineIds.length > 0) {
-          await prisma.machine.updateMany({
-            where: { id: { in: machineIds } },
-            data: { status: 'AVAILABLE' as any },
-          });
-        }
-        // Marcar contrato como completado
-        await prisma.contract.update({
-          where: { id: prismaContract.id },
-          data: { status: 'COMPLETED' as any },
-        });
-      }
-    }
-
-    // Recargar contratos después de actualizar
-    const updatedContracts = await prisma.contract.findMany({
-      include: { assignments: true },
-    });
-
-    return updatedContracts.map((prismaContract) => {
+    return prismaContracts.map((prismaContract) => {
       const contract = Contract.fromDatabase({
         id: prismaContract.id,
         code: prismaContract.code,
@@ -225,5 +198,37 @@ export class PrismaContractRepository implements IContractRepository {
     prismaStatus: import('@prisma/client').ContractStatus
   ): ContractStatus {
     return ContractStatus[prismaStatus as keyof typeof ContractStatus];
+  }
+
+  private async expireContracts(): Promise<void> {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    const activeContracts = await prisma.contract.findMany({
+      where: { status: 'ACTIVE' },
+      include: { assignments: true },
+    });
+
+    for (const prismaContract of activeContracts) {
+      const endDate = new Date(prismaContract.endDate);
+      endDate.setHours(0, 0, 0, 0);
+
+      if (endDate < now) {
+        console.log('>>> Expirando contrato:', prismaContract.code);
+        // Liberar máquinas asignadas
+        const machineIds = prismaContract.assignments.map(a => a.machineId);
+        if (machineIds.length > 0) {
+          await prisma.machine.updateMany({
+            where: { id: { in: machineIds } },
+            data: { status: 'AVAILABLE' as any },
+          });
+        }
+        // Marcar contrato como completado
+        await prisma.contract.update({
+          where: { id: prismaContract.id },
+          data: { status: 'COMPLETED' as any },
+        });
+      }
+    }
   }
 }

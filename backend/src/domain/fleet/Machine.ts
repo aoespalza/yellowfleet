@@ -15,6 +15,7 @@ export interface MachineProps {
   usefulLifeHours: number;
   status: MachineStatus;
   currentLocation: string;
+  currentOperatorId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -122,5 +123,9 @@ export class Machine {
 
   get updatedAt() {
     return this.props.updatedAt;
+  }
+
+  get currentOperatorId() {
+    return this.props.currentOperatorId;
   }
 }

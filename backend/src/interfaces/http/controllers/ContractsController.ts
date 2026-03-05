@@ -114,8 +114,9 @@ export class ContractsController {
 
   public async list(req: Request, res: Response): Promise<void> {
     try {
+      const includeAll = req.query.includeAll === 'true';
       const listContracts = new ListContracts(contractRepository);
-      const contracts = await listContracts.execute();
+      const contracts = await listContracts.execute(includeAll);
       
       const plainContracts = contracts.map((c) => ({
         id: c.id,

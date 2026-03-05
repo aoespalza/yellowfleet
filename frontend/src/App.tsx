@@ -9,6 +9,8 @@ import { MachineHistoryPage } from './pages/MachineHistoryPage';
 import { UsersPage } from './pages/UsersPage';
 import { LoginPage } from './pages/LoginPage';
 import { FinancePage } from './pages/FinancePage';
+import { NotificationsPage } from './pages/NotificationsPage';
+import OperatorsPage from './pages/OperatorsPage';
 import './App.css';
 
 function AppNavigator() {
@@ -16,6 +18,7 @@ function AppNavigator() {
   const [currentPage, setCurrentPage] = useState<string>(() => {
     return localStorage.getItem('YF_PAGE') || 'dashboard';
   });
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [selectedContractId, setSelectedContractId] = useState<string | undefined>();
 
   // Limpiar el localStorage despues de leer
@@ -53,6 +56,12 @@ function AppNavigator() {
             Flota
           </button>
           <button
+            className={`app-nav__link ${currentPage === 'operators' ? 'app-nav__link--active' : ''}`}
+            onClick={() => setCurrentPage('operators')}
+          >
+            Operadores
+          </button>
+          <button
             className={`app-nav__link ${currentPage === 'contracts' ? 'app-nav__link--active' : ''}`}
             onClick={() => setCurrentPage('contracts')}
           >
@@ -71,12 +80,36 @@ function AppNavigator() {
             Finanzas
           </button>
           {user?.role === 'ADMIN' && (
-            <button
-              className={`app-nav__link ${currentPage === 'users' ? 'app-nav__link--active' : ''}`}
-              onClick={() => setCurrentPage('users')}
-            >
-              Usuarios
-            </button>
+            <div className="app-nav__dropdown">
+              <button 
+                className={`app-nav__link app-nav__link--dropdown ${settingsOpen ? 'app-nav__link--active' : ''}`}
+                onClick={() => setSettingsOpen(!settingsOpen)}
+              >
+                Configuraciones ▼
+              </button>
+              {settingsOpen && (
+                <div className="app-nav__dropdown-menu">
+                  <button
+                    className={`app-nav__dropdown-item ${currentPage === 'users' ? 'app-nav__dropdown-item--active' : ''}`}
+                    onClick={() => {
+                      setCurrentPage('users');
+                      setSettingsOpen(false);
+                    }}
+                  >
+                    👤 Usuarios
+                  </button>
+                  <button
+                    className={`app-nav__dropdown-item ${currentPage === 'notifications' ? 'app-nav__dropdown-item--active' : ''}`}
+                    onClick={() => {
+                      setCurrentPage('notifications');
+                      setSettingsOpen(false);
+                    }}
+                  >
+                    🔔 Notificaciones
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
         <div className="app-nav__user">
@@ -91,10 +124,12 @@ function AppNavigator() {
       <main className="app-main">
         {currentPage === 'dashboard' && <DashboardPage onNavigate={handleNavigate} />}
         {currentPage === 'fleet' && <FleetPage />}
+        {currentPage === 'operators' && <OperatorsPage />}
         {currentPage === 'contracts' && <ContractsPage initialContractId={selectedContractId} />}
         {currentPage === 'workshop' && <WorkshopPage />}
         {currentPage === 'finance' && <FinancePage />}
         {currentPage === 'users' && <UsersPage />}
+        {currentPage === 'notifications' && <NotificationsPage />}
       </main>
     </div>
   );

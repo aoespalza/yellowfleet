@@ -24,6 +24,7 @@ export class FleetController {
       await createMachine.execute(req.body);
       res.status(201).json({ message: 'Machine created successfully' });
     } catch (error) {
+      console.error('ERROR in list machines:', error);
       const message = error instanceof Error ? error.message : 'Unknown error';
       res.status(400).json({ error: message });
     }
@@ -83,12 +84,14 @@ export class FleetController {
         usefulLifeHours: machine.usefulLifeHours,
         status: machine.status,
         currentLocation: machine.currentLocation,
+        currentOperatorId: machine.currentOperatorId,
         createdAt: machine.createdAt,
         updatedAt: machine.updatedAt,
       }));
   
       res.status(200).json(response);
     } catch (error) {
+      console.error('ERROR in list machines:', error);
       const message = error instanceof Error ? error.message : 'Unknown error';
       res.status(400).json({ error: message });
     }
@@ -158,6 +161,7 @@ export class FleetController {
       await machineRepository.delete(req.params.id);
       res.status(200).json({ message: 'Machine deleted successfully' });
     } catch (error) {
+      console.error('ERROR in list machines:', error);
       const message = error instanceof Error ? error.message : 'Unknown error';
       res.status(400).json({ error: message });
     }

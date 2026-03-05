@@ -114,12 +114,30 @@
     border-radius: 4px;
     background: white;
   }
-  
+
   .filter-input:focus {
     outline: none;
     border-color: #f59e0b;
   }
-  
+
+  .th-with-filter {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .th-with-filter span {
+    font-size: 11px;
+    font-weight: 600;
+    color: #374151;
+    text-transform: uppercase;
+  }
+
+  .th-with-filter .filter-input {
+    font-size: 11px;
+    padding: 4px 6px;
+  }
+
   .btn-clear-filters {
     padding: 6px 10px;
     background: #ef4444;

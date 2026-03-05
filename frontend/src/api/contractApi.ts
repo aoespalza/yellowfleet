@@ -12,8 +12,8 @@ export interface MachineAssignment {
 }
 
 export const contractApi = {
-  getAll: async (): Promise<Contract[]> => {
-    const response = await api.get('/contracts');
+  getAll: async (includeAll: boolean = false): Promise<Contract[]> => {
+    const response = await api.get('/contracts', { params: { includeAll } });
     return response.data;
   },
 

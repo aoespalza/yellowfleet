@@ -80,6 +80,7 @@ model Machine {
   hourMeter        Float?
   acquisitionDate  DateTime?
   acquisitionValue Float?
+  commercialValue Float?
   usefulLifeHours  Float?
   currentLocation  String?
   
@@ -88,6 +89,9 @@ model Machine {
   maintenanceIntervalHours Float?
   lastMaintenanceDate DateTime?
 
+  // Operador actual
+  currentOperatorId String?
+  
   status           MachineStatus
   previousStatus   MachineStatus?
 
@@ -99,6 +103,8 @@ model Machine {
   hourMeterLogs    HourMeterLog[]
   legalDocuments   LegalDocument[]
   leasing          Leasing?
+  operatorAssignments MachineOperatorAssignment[]
+  currentOperator  Operator?     @relation("CurrentOperator", fields: [currentOperatorId], references: [id], onDelete: SetNull)
 }
 
 
@@ -246,11 +252,61 @@ model Leasing {
 model LeasingPayment {
   id              String        @id @default(uuid())
   leasingId       String
-  paymentDate     DateTime      // Fecha del pago
-  amount          Float         // Monto pagado
+  dueDate         DateTime?     // Fecha de vencimiento de la cuota (nullable para datos existentes)
+  paymentDate     DateTime?     // Fecha del pago (nullable si no se ha pagado)
+  amount          Float         // Monto de la cuota
+  status          PaymentStatus @default(PENDING)
   paymentsCount   Int           // Número de cuotas pagadas en este pago
   totalPaidAfter  Int           // Total de cuotas pagadas después de este pago
   notes           String?
   createdAt       DateTime      @default(now())
   leasing         Leasing       @relation(fields: [leasingId], references: [id], onDelete: Cascade)
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model SystemConfig {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Operator {
+  id            String   @id @default(uuid())
+  name          String
+  licenseNumber String?  // Número de licencia de conducir
+  phone         String?
+  email         String?
+  hireDate      DateTime?
+  isActive      Boolean  @default(true)
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  assignments   MachineOperatorAssignment[]
+  machines      Machine[] @relation("CurrentOperator")
+}
+
+model MachineOperatorAssignment {
+  id          String    @id @default(uuid())
+  machineId   String
+  operatorId  String
+  startDate   DateTime  @default(now())
+  endDate     DateTime?
+  isActive    Boolean   @default(true)
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  machine     Machine   @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  operator    Operator  @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+
+  @@unique([machineId, operatorId, startDate])
 }

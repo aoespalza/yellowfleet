@@ -48,13 +48,16 @@ export class PrismaMachineRepository implements IMachineRepository {
   async findById(id: string): Promise<Machine | null> {
     const prismaMachine = await prisma.machine.findUnique({
       where: { id },
+      include: {
+        currentOperator: true,
+      },
     });
 
     if (!prismaMachine) {
       return null;
     }
 
-    return this.toDomain(prismaMachine);
+    return this.toDomain(prismaMachine, prismaMachine.currentOperator);
   }
 
   async findAll(): Promise<Machine[]> {
@@ -83,10 +86,14 @@ export class PrismaMachineRepository implements IMachineRepository {
       }
     }
 
-    const prismaMachines = await prisma.machine.findMany();
+    const prismaMachines = await prisma.machine.findMany({
+      include: {
+        currentOperator: true,
+      },
+    });
 
     return prismaMachines.map((prismaMachine) =>
-      this.toDomain(prismaMachine)
+      this.toDomain(prismaMachine, prismaMachine.currentOperator)
     );
   }
 
@@ -107,7 +114,7 @@ export class PrismaMachineRepository implements IMachineRepository {
   }
 
   // 🔥 Mapper centralizado (PRO)
-  private toDomain(prismaMachine: any): Machine {
+  private toDomain(prismaMachine: any, currentOperator?: any): Machine {
     return Machine.restore({
       id: prismaMachine.id,
       code: prismaMachine.code,
@@ -123,6 +130,7 @@ export class PrismaMachineRepository implements IMachineRepository {
       usefulLifeHours: prismaMachine.usefulLifeHours ?? 0,
       status: this.mapPrismaStatusToDomain(prismaMachine.status),
       currentLocation: prismaMachine.currentLocation ?? '',
+      currentOperatorId: prismaMachine.currentOperatorId ?? null,
       createdAt: prismaMachine.createdAt,
       updatedAt: prismaMachine.updatedAt,
     });
