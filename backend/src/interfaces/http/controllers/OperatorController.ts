@@ -7,8 +7,12 @@ const operatorRepository = new PrismaOperatorRepository();
 export class OperatorController {
   public async create(req: Request, res: Response): Promise<void> {
     try {
+      const { hireDate, ...rest } = req.body;
       const createOperator = new CreateOperator(operatorRepository);
-      const operator = await createOperator.execute(req.body);
+      const operator = await createOperator.execute({
+        ...rest,
+        hireDate: hireDate ? new Date(hireDate) : undefined,
+      });
       res.status(201).json(operator.toPlainObject());
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
@@ -47,8 +51,12 @@ export class OperatorController {
   public async update(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
+      const { hireDate, ...rest } = req.body;
       const updateOperator = new UpdateOperator(operatorRepository);
-      const operator = await updateOperator.execute(id, req.body);
+      const operator = await updateOperator.execute(id, {
+        ...rest,
+        hireDate: hireDate ? new Date(hireDate) : undefined,
+      });
       res.status(200).json(operator.toPlainObject());
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';

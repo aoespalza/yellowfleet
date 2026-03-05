@@ -62,4 +62,16 @@ export class Operator {
       updatedAt: this.updatedAt,
     };
   }
+
+  toPrisma() {
+    return {
+      name: this.name,
+      licenseNumber: this.licenseNumber ?? null,
+      phone: this.phone ?? null,
+      email: this.email ?? null,
+      hireDate: this.hireDate ?? null,
+      isActive: this._isActive,
+      notes: this.notes ?? null,
+    };
+  }
 }

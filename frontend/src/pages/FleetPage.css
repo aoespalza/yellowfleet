@@ -138,6 +138,160 @@
     padding: 4px 6px;
   }
 
+  /* Botón asignar operador */
+  .btn-assign {
+    padding: 6px 8px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-right: 4px;
+  }
+
+  .btn-assign:hover {
+    background: #2563eb;
+  }
+
+  .btn-unassign {
+    padding: 8px 12px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    width: 100%;
+  }
+
+  .btn-unassign:hover {
+    background: #dc2626;
+  }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .modal-content {
+    background: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #1f2937;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #6b7280;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  .modal-close:hover {
+    color: #1f2937;
+  }
+
+  .modal-body {
+    padding: 20px;
+  }
+
+  .modal-body p {
+    margin: 0 0 16px 0;
+    color: #4b5563;
+  }
+
+  .modal-body .form-group {
+    margin-bottom: 16px;
+  }
+
+  .modal-body .form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: #374151;
+  }
+
+  .modal-body .form-control {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+
+  .modal-body .form-control:focus {
+    outline: none;
+    border-color: #f59e0b;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 20px;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .btn-cancel {
+    padding: 10px 20px;
+    background: #f3f4f6;
+    color: #4b5563;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .btn-cancel:hover {
+    background: #e5e7eb;
+  }
+
+  .btn-confirm {
+    padding: 10px 20px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .btn-confirm:hover {
+    background: #2563eb;
+  }
+
+  .btn-confirm:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+  }
+
   .btn-clear-filters {
     padding: 6px 10px;
     background: #ef4444;

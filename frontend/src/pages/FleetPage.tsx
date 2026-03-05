@@ -49,6 +49,12 @@ export function FleetPage() {
   const [editingMachineId, setEditingMachineId] = useState<string | null>(null);
   const [formData, setFormData] = useState<MachineFormData>(initialFormData);
 
+  // Modal de asignación de operador
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [selectedMachineForAssign, setSelectedMachineForAssign] = useState<Machine | null>(null);
+  const [assigningOperator, setAssigningOperator] = useState<string>('');
+  const [assigningLoading, setAssigningLoading] = useState(false);
+
   // Filtros
   const [filters, setFilters] = useState<Record<string, string>>({
     code: '',
@@ -163,6 +169,45 @@ export function FleetPage() {
       fetchMachines();
     } catch (error) {
       console.error('Error deleting machine:', error);
+    }
+  };
+
+  // Abrir modal de asignación de operador
+  const openAssignModal = (machine: Machine) => {
+    setSelectedMachineForAssign(machine);
+    setAssigningOperator((machine as any).currentOperatorId || '');
+    setShowAssignModal(true);
+  };
+
+  // Asignar operador a máquina
+  const handleAssignOperator = async () => {
+    if (!selectedMachineForAssign || !assigningOperator) return;
+    
+    try {
+      setAssigningLoading(true);
+      await operatorApi.assignToMachine(assigningOperator, selectedMachineForAssign.id);
+      setShowAssignModal(false);
+      setSelectedMachineForAssign(null);
+      setAssigningOperator('');
+      fetchMachines();
+    } catch (error) {
+      console.error('Error assigning operator:', error);
+      alert('Error al asignar operador');
+    } finally {
+      setAssigningLoading(false);
+    }
+  };
+
+  // Desasignar operador
+  const handleUnassignOperator = async (machineId: string) => {
+    if (!window.confirm('¿Desea desasignar el operador de esta máquina?')) {
+      return;
+    }
+    try {
+      await operatorApi.unassignFromMachine(machineId);
+      fetchMachines();
+    } catch (error) {
+      console.error('Error unassigning operator:', error);
     }
   };
 
@@ -579,6 +624,13 @@ export function FleetPage() {
                   </td>
                   <td>
                     <div className="action-buttons">
+                      <button
+                        className="btn-assign"
+                        onClick={() => openAssignModal(machine)}
+                        title="Asignar Operador"
+                      >
+                        👤
+                      </button>
                       <Link
                         to={`/fleet/${machine.id}/history`}
                         className="btn-history"
@@ -612,6 +664,57 @@ export function FleetPage() {
           </table>
         )}
       </div>
+
+      {/* Modal de asignación de operador */}
+      {showAssignModal && (
+        <div className="modal-overlay" onClick={() => setShowAssignModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Asignar Operador</h3>
+              <button className="modal-close" onClick={() => setShowAssignModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <p>
+                <strong>Máquina:</strong> {selectedMachineForAssign?.code} - {selectedMachineForAssign?.brand} {selectedMachineForAssign?.model}
+              </p>
+              <div className="form-group">
+                <label>Seleccionar Operador:</label>
+                <select
+                  value={assigningOperator}
+                  onChange={(e) => setAssigningOperator(e.target.value)}
+                  className="form-control"
+                >
+                  <option value="">-- Seleccionar operador --</option>
+                  {operators.map(op => (
+                    <option key={op.id} value={op.id}>{op.name}</option>
+                  ))}
+                </select>
+              </div>
+              {assigningOperator && (
+                <button
+                  className="btn-unassign"
+                  onClick={() => handleUnassignOperator(selectedMachineForAssign!.id)}
+                  style={{ marginTop: '8px' }}
+                >
+                  Desasignar Operador Actual
+                </button>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn-cancel" onClick={() => setShowAssignModal(false)}>
+                Cancelar
+              </button>
+              <button
+                className="btn-confirm"
+                onClick={handleAssignOperator}
+                disabled={!assigningOperator || assigningLoading}
+              >
+                {assigningLoading ? 'Asignando...' : 'Asignar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

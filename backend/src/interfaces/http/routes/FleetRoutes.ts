@@ -1,14 +1,17 @@
 import { Router } from 'express';
 import { FleetController } from '../controllers/FleetController';
+import { OperatorController } from '../controllers/OperatorController';
 import { CreateMachine } from '../../../application/fleet/CreateMachine';
 import { ChangeMachineStatus } from '../../../application/fleet/ChangeMachineStatus';
 import { GetMachineById } from '../../../application/fleet/GetMachineById';
 import { ListMachines } from '../../../application/fleet/ListMachines';
 import { PrismaMachineRepository } from '../../../infrastructure/repositories/PrismaMachineRepository';
+import { PrismaOperatorRepository } from '../../../infrastructure/repositories/PrismaOperatorRepository';
 import { authenticateToken, authorizeRole } from '../middleware/auth';
 
 
 const machineRepository = new PrismaMachineRepository();
+const operatorRepository = new PrismaOperatorRepository();
 
 const createMachine = new CreateMachine(machineRepository);
 const changeMachineStatus = new ChangeMachineStatus(machineRepository);
@@ -16,6 +19,7 @@ const getMachineById = new GetMachineById(machineRepository);
 const listMachines = new ListMachines(machineRepository);
 
 const fleetController = new FleetController();
+const operatorController = new OperatorController();
 
 const router = Router();
 
@@ -30,6 +34,11 @@ router.get('/machines/:id/hourmeter-history', authenticateToken, (req, res) => f
 router.get('/machines/:machineId/legal-documents', authenticateToken, (req, res) => fleetController.getLegalDocuments(req, res));
 router.put('/machines/:machineId/legal-documents', authenticateToken, authorizeRole('ADMIN', 'MANAGER'), (req, res) => fleetController.updateLegalDocuments(req, res));
 router.get('/legal-documents/expiring', authenticateToken, (req, res) => fleetController.getExpiringDocuments(req, res));
+
+// Rutas de operadores por máquina
+router.get('/machines/:machineId/operator', authenticateToken, (req, res) => operatorController.getMachineOperator(req, res));
+router.get('/machines/:machineId/operator-history', authenticateToken, (req, res) => operatorController.getMachineOperatorHistory(req, res));
+router.delete('/machines/:machineId/operator', authenticateToken, (req, res) => operatorController.unassignFromMachine(req, res));
 
 // Rutas protegidas (requieren autenticación y rol ADMIN o MANAGER)
 router.post('/machines', authenticateToken, authorizeRole('ADMIN', 'MANAGER'), (req, res) => fleetController.create(req, res));
