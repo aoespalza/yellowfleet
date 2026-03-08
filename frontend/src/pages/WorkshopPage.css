@@ -547,3 +547,103 @@
 .btn-export:hover {
   background: #059669;
 }
+
+/* Botón limpiar filtros de fecha */
+.btn-clear-filters {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-light);
+  border: 1px solid var(--border);
+  color: var(--text-dark);
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: var(--space-sm);
+}
+
+.btn-clear-filters:hover {
+  background: #fee2e2;
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+/* Métricas Cards */
+.metrics-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
+}
+
+@media (min-width: 768px) {
+  .metrics-cards {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 1200px) {
+  .metrics-cards {
+    grid-template-columns: repeat(8, 1fr);
+  }
+}
+
+.metric-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  background: var(--bg-white);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  box-shadow: var(--shadow-sm);
+  border-left: 4px solid var(--primary);
+}
+
+.metric-card--open {
+  border-left-color: #3b82f6;
+}
+
+.metric-card--completed {
+  border-left-color: #10b981;
+}
+
+.metric-card--cost {
+  border-left-color: #f59e0b;
+}
+
+.metric-card--time {
+  border-left-color: #8b5cf6;
+}
+
+.metric-card--preventive {
+  border-left-color: #06b6d4;
+}
+
+.metric-card--corrective {
+  border-left-color: #ef4444;
+}
+
+.metric-card--cancelled {
+  border-left-color: #6b7280;
+}
+
+.metric-icon {
+  font-size: 24px;
+}
+
+.metric-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.metric-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.metric-label {
+  font-size: 11px;
+  color: var(--text-gray);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}

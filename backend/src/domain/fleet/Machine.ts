@@ -12,6 +12,7 @@ export interface MachineProps {
   hourMeter: number;
   acquisitionDate: Date;
   acquisitionValue: number;
+  commercialValue?: number;
   usefulLifeHours: number;
   status: MachineStatus;
   currentLocation: string;
@@ -103,6 +104,10 @@ export class Machine {
 
   get acquisitionValue() {
     return this.props.acquisitionValue;
+  }
+
+  get commercialValue() {
+    return this.props.commercialValue;
   }
 
   get usefulLifeHours() {

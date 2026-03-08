@@ -1,9 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
-import { financeApi, type FinanceDashboard, type MachineProfitability, type MachineUptime, type WorkshopImpact, type Leasing, type LeasingSummary, type LeasingFormData, type MachineWithoutLeasing, type LeasingPayment, type LeasingPaymentFormData } from '../api/financeApi';
+import { useEffect, useState } from 'react';
+import { financeApi, type Leasing, type LeasingSummary, type LeasingFormData, type MachineWithoutLeasing, type LeasingPayment, type LeasingPaymentFormData } from '../api/financeApi';
 import { KPICard } from '../components/KPICard';
 import { KPIGrid } from '../components/KPIGrid';
-import type { KPIMetric } from '../types/dashboard';
-import { exportToExcel } from '../utils/exportExcel';
 import './FinancePage.css';
 
 function formatCurrency(value: number): string {
@@ -14,22 +12,10 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
-function formatHours(hours: number): string {
-  if (hours >= 24) {
-    const days = Math.floor(hours / 24);
-    return `${days}d ${Math.round(hours % 24)}h`;
-  }
-  return `${Math.round(hours)}h`;
-}
-
-type TabType = 'overview' | 'profitability' | 'uptime' | 'workshop' | 'leasing';
+type TabType = 'leasing';
 
 export function FinancePage() {
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
-  const [dashboard, setDashboard] = useState<FinanceDashboard | null>(null);
-  const [profitability, setProfitability] = useState<MachineProfitability[]>([]);
-  const [uptime, setUptime] = useState<MachineUptime[]>([]);
-  const [workshopImpact, setWorkshopImpact] = useState<WorkshopImpact[]>([]);
+  const [activeTab, setActiveTab] = useState<TabType>('leasing');
   const [loading, setLoading] = useState(true);
   
   // Leasing state
@@ -73,45 +59,22 @@ export function FinancePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [dashboardData, profitabilityData, uptimeData, workshopData] = await Promise.all([
-          financeApi.getDashboard(),
-          financeApi.getMachinesProfitability(),
-          financeApi.getMachineUptime(),
-          financeApi.getWorkshopImpact(),
+        const [leasingsData, summaryData, machinesData] = await Promise.all([
+          financeApi.getLeasings(),
+          financeApi.getLeasingSummary(),
+          financeApi.getMachinesWithoutLeasing(),
         ]);
-        setDashboard(dashboardData);
-        setProfitability(profitabilityData);
-        setUptime(uptimeData);
-        setWorkshopImpact(workshopData);
+        setLeasings(leasingsData);
+        setLeasingSummary(summaryData);
+        setMachinesWithoutLeasing(machinesData);
       } catch (error) {
-        console.error('Error fetching finance data:', error);
+        console.error('Error fetching leasing data:', error);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
   }, []);
-
-  // Fetch leasing data when tab changes to leasing
-  useEffect(() => {
-    if (activeTab === 'leasing') {
-      const fetchLeasingData = async () => {
-        try {
-          const [leasingsData, summaryData, machinesData] = await Promise.all([
-            financeApi.getLeasings(),
-            financeApi.getLeasingSummary(),
-            financeApi.getMachinesWithoutLeasing(),
-          ]);
-          setLeasings(leasingsData);
-          setLeasingSummary(summaryData);
-          setMachinesWithoutLeasing(machinesData);
-        } catch (error) {
-          console.error('Error fetching leasing data:', error);
-        }
-      };
-      fetchLeasingData();
-    }
-  }, [activeTab]);
 
   const handleCreateLeasing = async () => {
     try {
@@ -261,136 +224,6 @@ export function FinancePage() {
     }
   };
 
-  const overviewMetrics = useMemo<KPIMetric[]>(() => {
-    if (!dashboard) return [];
-    return [
-      {
-        id: 'totalIncome',
-        title: 'Ingresos Totales',
-        value: formatCurrency(dashboard.totalIncome),
-        variant: 'primary' as const,
-        icon: '💵',
-        subtitle: 'Ingresos por contratos',
-      },
-      {
-        id: 'maintenanceCost',
-        title: 'Costos Taller',
-        value: formatCurrency(dashboard.totalMaintenanceCost + dashboard.totalSparePartsCost + dashboard.totalLaborCost),
-        variant: 'warning' as const,
-        icon: '🔧',
-        subtitle: 'Mantenimiento total',
-      },
-      {
-        id: 'grossMargin',
-        title: 'Margen Bruto',
-        value: formatCurrency(dashboard.grossMargin),
-        variant: dashboard.grossMargin >= 0 ? ('success' as const) : ('danger' as const),
-        icon: '📈',
-        subtitle: 'Ingresos - Costos',
-      },
-      {
-        id: 'marginPercentage',
-        title: '% Margen',
-        value: `${dashboard.marginPercentage.toFixed(1)}%`,
-        variant: dashboard.marginPercentage >= 30 ? ('success' as const) : dashboard.marginPercentage >= 15 ? ('warning' as const) : ('danger' as const),
-        icon: '📊',
-        subtitle: 'Margen / Ingresos',
-      },
-      {
-        id: 'availability',
-        title: 'Disponibilidad',
-        value: `${dashboard.availabilityPercentage.toFixed(1)}%`,
-        variant: dashboard.availabilityPercentage >= 80 ? ('success' as const) : dashboard.availabilityPercentage >= 60 ? ('warning' as const) : ('danger' as const),
-        icon: '✅',
-        subtitle: 'Flota disponible',
-      },
-      {
-        id: 'downtime',
-        title: 'Horas Inactividad',
-        value: formatHours(dashboard.totalDowntimeHours),
-        variant: 'info' as const,
-        icon: '⏱️',
-        subtitle: 'Por mantenimientos',
-      },
-      {
-        id: 'activeContracts',
-        title: 'Contratos Activos',
-        value: dashboard.activeContracts,
-        variant: 'primary' as const,
-        icon: '📄',
-        subtitle: 'Generando ingresos',
-      },
-      {
-        id: 'avgProfit',
-        title: 'Margen Promedio',
-        value: formatCurrency(dashboard.averageProfitPerMachine),
-        variant: dashboard.averageProfitPerMachine >= 0 ? ('success' as const) : ('danger' as const),
-        icon: '💰',
-        subtitle: 'Por máquina',
-      },
-    ];
-  }, [dashboard]);
-
-  const workshopMetrics = useMemo<KPIMetric[]>(() => {
-    if (!workshopImpact.length) return [];
-    const totalSpareParts = workshopImpact.reduce((sum, m) => sum + m.sparePartsCost, 0);
-    const totalLabor = workshopImpact.reduce((sum, m) => sum + m.laborCost, 0);
-    const totalCost = workshopImpact.reduce((sum, m) => sum + m.totalCost, 0);
-    const totalDowntime = workshopImpact.reduce((sum, m) => sum + m.downtimeHours, 0);
-    const totalLostIncome = workshopImpact.reduce((sum, m) => sum + m.lostIncome, 0);
-    
-    return [
-      {
-        id: 'spareParts',
-        title: 'Repuestos',
-        value: formatCurrency(totalSpareParts),
-        variant: 'warning' as const,
-        icon: '⚙️',
-        subtitle: 'Costo total repuestos',
-      },
-      {
-        id: 'labor',
-        title: 'Mano de Obra',
-        value: formatCurrency(totalLabor),
-        variant: 'warning' as const,
-        icon: '👷',
-        subtitle: 'Costo total mano de obra',
-      },
-      {
-        id: 'totalWorkshopCost',
-        title: 'Costo Total Taller',
-        value: formatCurrency(totalCost),
-        variant: 'danger' as const,
-        icon: '🔧',
-        subtitle: 'Repuestos + Mano de obra',
-      },
-      {
-        id: 'lostIncome',
-        title: 'Ingresos Perdidos',
-        value: formatCurrency(totalLostIncome),
-        variant: 'danger' as const,
-        icon: '📉',
-        subtitle: 'Por tiempo en taller',
-      },
-      {
-        id: 'totalDowntime',
-        title: 'Horas Inactivas',
-        value: formatHours(totalDowntime),
-        variant: 'info' as const,
-        icon: '⏱️',
-        subtitle: 'Tiempo total en taller',
-      },
-      {
-        id: 'maintenanceVisits',
-        title: 'Visitas Taller',
-        value: workshopImpact.reduce((sum, m) => sum + m.maintenanceCount, 0),
-        variant: 'primary' as const,
-        icon: '🏢',
-        subtitle: 'Total mantenimientos',
-      },
-    ];
-  }, [workshopImpact]);
-
   if (loading) {
     return (
       <div className="finance-page">
@@ -410,30 +243,6 @@ export function FinancePage() {
 
       <div className="finance-tabs">
         <button
-          className={`finance-tab ${activeTab === 'overview' ? 'finance-tab--active' : ''}`}
-          onClick={() => setActiveTab('overview')}
-        >
-          📊 Resumen
-        </button>
-        <button
-          className={`finance-tab ${activeTab === 'profitability' ? 'finance-tab--active' : ''}`}
-          onClick={() => setActiveTab('profitability')}
-        >
-          💰 Rentabilidad
-        </button>
-        <button
-          className={`finance-tab ${activeTab === 'uptime' ? 'finance-tab--active' : ''}`}
-          onClick={() => setActiveTab('uptime')}
-        >
-          ⏱️ Operatividad
-        </button>
-        <button
-          className={`finance-tab ${activeTab === 'workshop' ? 'finance-tab--active' : ''}`}
-          onClick={() => setActiveTab('workshop')}
-        >
-          🔧 Impacto Taller
-        </button>
-        <button
           className={`finance-tab ${activeTab === 'leasing' ? 'finance-tab--active' : ''}`}
           onClick={() => setActiveTab('leasing')}
         >
@@ -442,273 +251,30 @@ export function FinancePage() {
       </div>
 
       <div className="finance-content">
-        {activeTab === 'overview' && (
-          <div className="finance-overview">
-            <KPIGrid>
-              {overviewMetrics.map((metric) => (
-                <KPICard key={metric.id} metric={metric} />
-              ))}
-            </KPIGrid>
-
-            <div className="finance-charts">
-              <div className="finance-chart finance-chart--half">
-                <h3>Top 5 Máquinas por Rentabilidad</h3>
-                <div className="finance-table">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Máquina</th>
-                        <th>Ingresos</th>
-                        <th>Costos</th>
-                        <th>Margen</th>
-                        <th>ROI %</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {profitability.slice(0, 5).map((m) => (
-                        <tr key={m.machineId}>
-                          <td className="machine-code">{m.machineCode}</td>
-                          <td className="income">{formatCurrency(m.totalIncome)}</td>
-                          <td className="cost">{formatCurrency(m.totalMaintenanceCost)}</td>
-                          <td className={m.margin >= 0 ? 'profit' : 'loss'}>{formatCurrency(m.margin)}</td>
-                          <td className={m.roi >= 0 ? 'profit' : 'loss'}>{m.roi.toFixed(1)}%</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div className="finance-chart finance-chart--half">
-                <h3>Top 5 Máquinas con Mayor Impacto Taller</h3>
-                <div className="finance-table">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Máquina</th>
-                        <th>Visitas</th>
-                        <th>Repuestos</th>
-                        <th>Mano Obra</th>
-                        <th>Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {workshopImpact.slice(0, 5).map((m) => (
-                        <tr key={m.machineId}>
-                          <td className="machine-code">{m.machineCode}</td>
-                          <td>{m.maintenanceCount}</td>
-                          <td className="cost">{formatCurrency(m.sparePartsCost)}</td>
-                          <td className="cost">{formatCurrency(m.laborCost)}</td>
-                          <td className="cost">{formatCurrency(m.totalCost)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'profitability' && (
-          <div className="finance-profitability">
-            <div className="finance-full-chart">
-              <h3>Rentabilidad por Máquina</h3>
-              <div className="finance-table finance-table--full">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Máquina</th>
-                      <th>Ingresos Totales</th>
-                      <th>Costos Mantenimiento</th>
-                      <th>Margen</th>
-                      <th>ROI %</th>
-                      <th>Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {profitability.map((m) => (
-                      <tr key={m.machineId}>
-                        <td className="machine-code">{m.machineCode}</td>
-                        <td className="income">{formatCurrency(m.totalIncome)}</td>
-                        <td className="cost">{formatCurrency(m.totalMaintenanceCost)}</td>
-                        <td className={m.margin >= 0 ? 'profit' : 'loss'}>{formatCurrency(m.margin)}</td>
-                        <td className={m.roi >= 0 ? 'profit' : 'loss'}>{m.roi.toFixed(1)}%</td>
-                        <td>
-                          <span className={`status-badge status-badge--${m.margin >= 0 ? 'success' : 'danger'}`}>
-                            {m.margin >= 0 ? 'Rentable' : 'Pérdida'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'uptime' && (
-          <div className="finance-uptime">
-            <KPIGrid>
-              <KPICard
-                metric={{
-                  id: 'avgUptime',
-                  title: 'Disponibilidad Promedio',
-                  value: `${uptime.length > 0 ? (uptime.reduce((sum, m) => sum + m.uptimePercentage, 0) / uptime.length).toFixed(1) : 0}%`,
-                  variant: 'primary' as const,
-                  icon: '📊',
-                  subtitle: 'Promedio flota',
-                }}
-              />
-              <KPICard
-                metric={{
-                  id: 'totalWorkshopHours',
-                  title: 'Horas en Taller',
-                  value: formatHours(uptime.reduce((sum, m) => sum + m.workshopHours, 0)),
-                  variant: 'warning' as const,
-                  icon: '🔧',
-                  subtitle: 'Total flota',
-                }}
-              />
-              <KPICard
-                metric={{
-                  id: 'totalMaintenances',
-                  title: 'Mantenimientos',
-                  value: uptime.reduce((sum, m) => sum + m.maintenanceCount, 0),
-                  variant: 'info' as const,
-                  icon: '🏢',
-                  subtitle: 'Total completados',
-                }}
-              />
-            </KPIGrid>
-
-            <div className="finance-full-chart">
-              <h3>Tiempo de Operatividad por Máquina</h3>
-              <div className="finance-table finance-table--full">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Máquina</th>
-                      <th>Horas Totales</th>
-                      <th>Horas Operación</th>
-                      <th>Horas Taller</th>
-                      <th>Disponibilidad %</th>
-                      <th>Mant. Completados</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {uptime.map((m) => (
-                      <tr key={m.machineId}>
-                        <td className="machine-code">{m.machineCode}</td>
-                        <td>{formatHours(m.totalHours)}</td>
-                        <td className="profit">{formatHours(m.operatingHours)}</td>
-                        <td className="cost">{formatHours(m.workshopHours)}</td>
-                        <td className={m.uptimePercentage >= 80 ? 'profit' : m.uptimePercentage >= 60 ? '' : 'loss'}>
-                          {m.uptimePercentage.toFixed(1)}%
-                        </td>
-                        <td>{m.maintenanceCount}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'workshop' && (
-          <div className="finance-workshop">
-            <KPIGrid>
-              {workshopMetrics.map((metric) => (
-                <KPICard key={metric.id} metric={metric} />
-              ))}
-            </KPIGrid>
-
-            <div className="finance-full-chart">
-              <h3>Impacto del Taller por Máquina</h3>
-              <div className="finance-table finance-table--full">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Máquina</th>
-                      <th>Visitas</th>
-                      <th>Repuestos</th>
-                      <th>Mano de Obra</th>
-                      <th>Costo Total</th>
-                      <th>Horas Inact.</th>
-                      <th>Ing. Perdidos</th>
-                      <th>Última Visita</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {workshopImpact.map((m) => (
-                      <tr key={m.machineId}>
-                        <td className="machine-code">{m.machineCode}</td>
-                        <td>{m.maintenanceCount}</td>
-                        <td className="cost">{formatCurrency(m.sparePartsCost)}</td>
-                        <td className="cost">{formatCurrency(m.laborCost)}</td>
-                        <td className="cost">{formatCurrency(m.totalCost)}</td>
-                        <td>{formatHours(m.downtimeHours)}</td>
-                        <td className="loss">{formatCurrency(m.lostIncome)}</td>
-                        <td>{m.lastMaintenanceDate ? new Date(m.lastMaintenanceDate).toLocaleDateString('es-CL') : '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
         {activeTab === 'leasing' && (
           <div className="finance-leasing">
             <div className="finance-leasing-header">
-              <div className="header-actions">
-                <button 
-                  className="btn-export"
-                  onClick={() => exportToExcel(
-                    leasings,
-                    [
-                      { key: 'machineCode', header: 'Máquina' },
-                      { key: 'entity', header: 'Entidad' },
-                      { key: 'purchaseValue', header: 'Valor Compra' },
-                      { key: 'currentBalance', header: 'Saldo Pendiente' },
-                      { key: 'monthlyPayment', header: 'Cuota Mensual' },
-                      { key: 'paidPayments', header: 'Cuotas Pagadas' },
-                      { key: 'totalPayments', header: 'Total Cuotas' },
-                      { key: 'startDate', header: 'Fecha Inicio' },
-                      { key: 'endDate', header: 'Fecha Fin' },
-                      { key: 'status', header: 'Estado' },
-                    ],
-                    'leasing',
-                    'Leasing'
-                  )}
-                >
-                  📥 Exportar Excel
-                </button>
-                <button 
-                  className="btn btn-primary"
-                  onClick={() => {
-                    setEditingLeasing(null);
-                    setLeasingForm({
-                      machineId: '',
-                      purchaseValue: 0,
-                      currentBalance: 0,
-                      monthlyPayment: 0,
-                      entity: '',
-                      startDate: '',
-                      endDate: '',
-                      totalPayments: 0,
-                      interestRate: undefined,
-                      notes: '',
-                    });
-                    setShowLeasingModal(true);
-                  }}
-                >
-                  + Nuevo Leasing
-                </button>
-              </div>
+              <button 
+                className="btn btn-primary"
+                onClick={() => {
+                  setEditingLeasing(null);
+                  setLeasingForm({
+                    machineId: '',
+                    purchaseValue: 0,
+                    currentBalance: 0,
+                    monthlyPayment: 0,
+                    entity: '',
+                    startDate: '',
+                    endDate: '',
+                    totalPayments: 0,
+                    interestRate: undefined,
+                    notes: '',
+                  });
+                  setShowLeasingModal(true);
+                }}
+              >
+                + Nuevo Leasing
+              </button>
             </div>
 
             {leasingSummary && (

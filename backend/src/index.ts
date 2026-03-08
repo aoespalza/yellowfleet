@@ -22,7 +22,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 app.use(
   cors({
-    origin: ['http://localhost:5173', 'http://localhost:3000', 'http://192.168.50.85:5173', 'http://192.168.50.85:3000'],
+    origin: ['http://localhost:5173', 'http://localhost:3000', 'http://192.168.50.85:5173', 'http://192.168.50.85:3000', 'http://192.168.126.194:5173', 'http://192.168.126.194:3000'],
     credentials: true,
   })
 );

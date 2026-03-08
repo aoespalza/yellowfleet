@@ -81,6 +81,7 @@ export class FleetController {
         hourMeter: machine.hourMeter,
         acquisitionDate: machine.acquisitionDate,
         acquisitionValue: machine.acquisitionValue,
+        commercialValue: machine.commercialValue,
         usefulLifeHours: machine.usefulLifeHours,
         status: machine.status,
         currentLocation: machine.currentLocation,

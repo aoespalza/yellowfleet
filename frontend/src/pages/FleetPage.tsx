@@ -124,7 +124,7 @@ export function FleetPage() {
         hourMeter: Number(formData.hourMeter),
         acquisitionValue: Number(formData.acquisitionValue),
         usefulLifeHours: Number(formData.usefulLifeHours),
-        commercialValue: formData.commercialValue ? Number(formData.commercialValue) : undefined,
+        commercialValue: formData.commercialValue !== '' ? Number(formData.commercialValue) : null,
       };
 
       if (editingMachineId) {

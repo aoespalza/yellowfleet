@@ -10,6 +10,7 @@ import { UsersPage } from './pages/UsersPage';
 import { LoginPage } from './pages/LoginPage';
 import { FinancePage } from './pages/FinancePage';
 import { NotificationsPage } from './pages/NotificationsPage';
+import { OperativityPage } from './pages/OperativityPage';
 import OperatorsPage from './pages/OperatorsPage';
 import './App.css';
 
@@ -79,6 +80,12 @@ function AppNavigator() {
           >
             Finanzas
           </button>
+          <button
+            className={`app-nav__link ${currentPage === 'operativity' ? 'app-nav__link--active' : ''}`}
+            onClick={() => setCurrentPage('operativity')}
+          >
+            Operatividad
+          </button>
           {user?.role === 'ADMIN' && (
             <div className="app-nav__dropdown">
               <button 
@@ -128,6 +135,7 @@ function AppNavigator() {
         {currentPage === 'contracts' && <ContractsPage initialContractId={selectedContractId} />}
         {currentPage === 'workshop' && <WorkshopPage />}
         {currentPage === 'finance' && <FinancePage />}
+        {currentPage === 'operativity' && <OperativityPage />}
         {currentPage === 'users' && <UsersPage />}
         {currentPage === 'notifications' && <NotificationsPage />}
       </main>

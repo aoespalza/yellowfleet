@@ -12,6 +12,7 @@ export interface UpdateMachineInput {
   hourMeter: number;
   acquisitionDate: Date;
   acquisitionValue: number;
+  commercialValue?: number;
   usefulLifeHours: number;
   currentLocation: string;
 }
@@ -37,6 +38,7 @@ export class UpdateMachine {
       hourMeter: input.hourMeter,
       acquisitionDate: input.acquisitionDate,
       acquisitionValue: input.acquisitionValue,
+      commercialValue: input.commercialValue,
       usefulLifeHours: input.usefulLifeHours,
       currentLocation: input.currentLocation,
     });

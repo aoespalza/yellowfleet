@@ -14,6 +14,7 @@ export interface CreateMachineInput {
   hourMeter: number;
   acquisitionDate: Date;
   acquisitionValue: number;
+  commercialValue?: number;
   usefulLifeHours: number;
   currentLocation: string;
 }
@@ -33,6 +34,7 @@ export class CreateMachine {
       hourMeter: input.hourMeter,
       acquisitionDate: input.acquisitionDate,
       acquisitionValue: input.acquisitionValue,
+      commercialValue: input.commercialValue,
       usefulLifeHours: input.usefulLifeHours,
       status: MachineStatus.AVAILABLE,
       currentLocation: input.currentLocation,

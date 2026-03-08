@@ -1,0 +1,184 @@
+.operativity-page {
+  padding: var(--space-lg);
+}
+
+.operativity-header {
+  margin-bottom: var(--space-lg);
+}
+
+.operativity-header h1 {
+  font-size: 24px;
+  font-weight: bold;
+  color: #1f2937;
+  margin: 0 0 var(--space-xs) 0;
+}
+
+.operativity-subtitle {
+  color: var(--text-gray);
+  font-size: 14px;
+}
+
+.operativity-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: var(--text-gray);
+  font-size: 16px;
+}
+
+/* Tabs */
+.operativity-tabs {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: var(--space-sm);
+}
+
+.operativity-tab {
+  padding: var(--space-sm) var(--space-lg);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-gray);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.operativity-tab:hover {
+  color: var(--primary);
+  background: var(--bg-light);
+}
+
+.operativity-tab--active {
+  color: var(--primary);
+  background: var(--primary-light);
+  border-bottom: 2px solid var(--primary);
+}
+
+/* Content */
+.operativity-content {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Tables */
+.operativity-full-chart {
+  margin-top: var(--space-xl);
+}
+
+.operativity-full-chart h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin: 0 0 var(--space-md) 0;
+}
+
+.operativity-table {
+  background: var(--bg-white);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.operativity-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.operativity-table th,
+.operativity-table td {
+  padding: var(--space-sm) var(--space-md);
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.operativity-table th {
+  background: var(--bg-light);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-gray);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.operativity-table td {
+  font-size: 14px;
+  color: var(--text-dark);
+}
+
+.operativity-table tr:last-child td {
+  border-bottom: none;
+}
+
+.operativity-table tr:hover {
+  background: var(--bg-light);
+}
+
+.machine-code {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.operativity-table td.profit {
+  color: #10b981 !important;
+  font-weight: 600;
+}
+
+.operativity-table td.loss {
+  color: #ef4444 !important;
+  font-weight: 600;
+}
+
+.operativity-table td.cost {
+  color: #f59e0b !important;
+  font-weight: 600;
+}
+
+.operativity-table td.income {
+  color: #10b981 !important;
+  font-weight: 600;
+}
+
+/* Status badges */
+.status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-badge--success {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.status-badge--warning {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.status-badge--danger {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.status-badge--info {
+  background: #dbeafe;
+  color: #1d4ed8;
+}

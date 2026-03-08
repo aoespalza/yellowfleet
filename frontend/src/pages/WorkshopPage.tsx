@@ -58,6 +58,8 @@ export function WorkshopPage() {
   // Filtros
   const [searchMachine, setSearchMachine] = useState('');
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('ALL');
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
 
   const fetchData = async () => {
     try {
@@ -108,10 +110,57 @@ export function WorkshopPage() {
       } else if (filterStatus === 'CLOSED') {
         matchesStatus = isClosed;
       }
+
+      // Filtro por rango de fechas
+      let matchesDate = true;
+      if (filterDateFrom) {
+        const entryDate = new Date(wo.entryDate);
+        const fromDate = new Date(filterDateFrom);
+        fromDate.setHours(0, 0, 0, 0);
+        matchesDate = entryDate >= fromDate;
+      }
+      if (filterDateTo && matchesDate) {
+        const entryDate = new Date(wo.entryDate);
+        const toDate = new Date(filterDateTo);
+        toDate.setHours(23, 59, 59, 999);
+        matchesDate = entryDate <= toDate;
+      }
       
-      return matchesSearch && matchesStatus;
+      return matchesSearch && matchesStatus && matchesDate;
     });
-  }, [workOrders, searchMachine, filterStatus]);
+  }, [workOrders, searchMachine, filterStatus, filterDateFrom, filterDateTo]);
+
+  // Métricas calculadas basadas en los filtros
+  const metrics = useMemo(() => {
+    const total = filteredOrders.length;
+    const open = filteredOrders.filter(wo => wo.status === 'OPEN' || wo.status === 'IN_PROGRESS' || wo.status === 'WAITING_PARTS').length;
+    const completed = filteredOrders.filter(wo => wo.status === 'COMPLETED').length;
+    const cancelled = filteredOrders.filter(wo => wo.status === 'CANCELLED').length;
+    
+    const totalSpareParts = filteredOrders.reduce((sum, wo) => sum + (wo.sparePartsCost || 0), 0);
+    const totalLabor = filteredOrders.reduce((sum, wo) => sum + (wo.laborCost || 0), 0);
+    const totalCost = totalSpareParts + totalLabor;
+    
+    const totalDowntime = filteredOrders.reduce((sum, wo) => sum + (wo.downtimeHours || 0), 0);
+    
+    const preventive = filteredOrders.filter(wo => wo.type === 'PREVENTIVE').length;
+    const corrective = filteredOrders.filter(wo => wo.type === 'CORRECTIVE').length;
+    const predictive = filteredOrders.filter(wo => wo.type === 'PREDICTIVE').length;
+    
+    return {
+      total,
+      open,
+      completed,
+      cancelled,
+      totalSpareParts,
+      totalLabor,
+      totalCost,
+      totalDowntime,
+      preventive,
+      corrective,
+      predictive,
+    };
+  }, [filteredOrders]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -369,6 +418,66 @@ export function WorkshopPage() {
         </div>
       </div>
 
+      {/* Métricas */}
+      <div className="metrics-cards">
+        <div className="metric-card">
+          <div className="metric-icon">📋</div>
+          <div className="metric-content">
+            <span className="metric-value">{metrics.total}</span>
+            <span className="metric-label">Total Órdenes</span>
+          </div>
+        </div>
+        <div className="metric-card metric-card--open">
+          <div className="metric-icon">🔧</div>
+          <div className="metric-content">
+            <span className="metric-value">{metrics.open}</span>
+            <span className="metric-label">Abiertas</span>
+          </div>
+        </div>
+        <div className="metric-card metric-card--completed">
+          <div className="metric-icon">✅</div>
+          <div className="metric-content">
+            <span className="metric-value">{metrics.completed}</span>
+            <span className="metric-label">Completadas</span>
+          </div>
+        </div>
+        <div className="metric-card metric-card--cost">
+          <div className="metric-icon">💰</div>
+          <div className="metric-content">
+            <span className="metric-value">${metrics.totalCost.toLocaleString('es-CL')}</span>
+            <span className="metric-label">Costo Total</span>
+          </div>
+        </div>
+        <div className="metric-card metric-card--time">
+          <div className="metric-icon">⏱️</div>
+          <div className="metric-content">
+            <span className="metric-value">{metrics.totalDowntime}h</span>
+            <span className="metric-label">Horas Paro</span>
+          </div>
+        </div>
+        <div className="metric-card metric-card--preventive">
+          <div className="metric-icon">🛡️</div>
+          <div className="metric-content">
+            <span className="metric-value">{metrics.preventive}</span>
+            <span className="metric-label">Preventivos</span>
+          </div>
+        </div>
+        <div className="metric-card metric-card--corrective">
+          <div className="metric-icon">🔨</div>
+          <div className="metric-content">
+            <span className="metric-value">{metrics.corrective}</span>
+            <span className="metric-label">Correctivos</span>
+          </div>
+        </div>
+        <div className="metric-card metric-card--cancelled">
+          <div className="metric-icon">❌</div>
+          <div className="metric-content">
+            <span className="metric-value">{metrics.cancelled}</span>
+            <span className="metric-label">Canceladas</span>
+          </div>
+        </div>
+      </div>
+
       {loading ? (
         <div className="loading">Cargando órdenes de trabajo...</div>
       ) : (
@@ -517,6 +626,36 @@ export function WorkshopPage() {
                     <option value="CLOSED">Cerradas</option>
                   </select>
                 </div>
+
+                <div className="filter-group">
+                  <label>Desde Fecha</label>
+                  <input
+                    type="date"
+                    value={filterDateFrom}
+                    onChange={(e) => setFilterDateFrom(e.target.value)}
+                    className="filter-input"
+                  />
+                </div>
+
+                <div className="filter-group">
+                  <label>Hasta Fecha</label>
+                  <input
+                    type="date"
+                    value={filterDateTo}
+                    onChange={(e) => setFilterDateTo(e.target.value)}
+                    className="filter-input"
+                  />
+                </div>
+
+                <button
+                  className="btn-clear-filters"
+                  onClick={() => {
+                    setFilterDateFrom('');
+                    setFilterDateTo('');
+                  }}
+                >
+                  Limpiar Fechas
+                </button>
                 
                 <div className="filter-results">
                   {filteredOrders.length} orden(es) encontrada(s)
