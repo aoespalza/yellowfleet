@@ -1,0 +1,31 @@
+services:
+  backend:
+    build: ./backend
+    container_name: yellowfleet_backend
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@172.18.0.2:5432/yellowfleet_db?schema=public"
+      JWT_SECRET: "yellowfleet-secret-key-production-2026"
+      JWT_EXPIRES_IN: "24h"
+      PORT: "3000"
+      NODE_ENV: "production"
+    ports:
+      - "3000:3000"
+    networks:
+      - orka_network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: yellowfleet_frontend
+    ports:
+      - "5173:80"
+    networks:
+      - orka_network
+    restart: unless-stopped
+
+networks:
+  orka_network:
+    external:
+      name: orka_reducida_orka_network

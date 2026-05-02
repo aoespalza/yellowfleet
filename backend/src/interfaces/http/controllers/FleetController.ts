@@ -133,10 +133,16 @@ export class FleetController {
       }
 
       const previousValue = machine.hourMeter || 0;
-      
-      await machineRepository.update(req.params.id, { hourMeter });
 
-      // Guardar trazabilidad del horómetro
+      // Acumular horas desde último mantenimiento (solo si el horómetro subió)
+      const delta = hourMeter - previousValue;
+      const updateData: any = { hourMeter };
+      if (delta > 0 && machine.maintenanceIntervalHours) {
+        updateData.hoursSinceLastMaintenance = (machine.hoursSinceLastMaintenance || 0) + delta;
+      }
+
+      await machineRepository.update(req.params.id, updateData);
+
       await prisma.hourMeterLog.create({
         data: {
           machineId: req.params.id,
@@ -146,9 +152,19 @@ export class FleetController {
         }
       });
 
-      res.status(200).json({ 
+      // Calcular estado de mantenimiento para incluir en respuesta
+      const hoursNow = updateData.hoursSinceLastMaintenance ?? machine.hoursSinceLastMaintenance ?? 0;
+      const interval = machine.maintenanceIntervalHours;
+      const maintenanceStatus = interval
+        ? { hoursSinceLastMaintenance: hoursNow, maintenanceIntervalHours: interval,
+            percentUsed: Math.round((hoursNow / interval) * 100),
+            isDue: hoursNow >= interval }
+        : null;
+
+      res.status(200).json({
         message: 'Horómetro actualizado',
-        hourMeter: hourMeter 
+        hourMeter,
+        maintenanceStatus
       });
     } catch (error) {
       console.error('Update hourMeter error:', error);
@@ -157,6 +173,43 @@ export class FleetController {
     }
   }
   
+  public async getMaintenanceDue(req: Request, res: Response): Promise<void> {
+    try {
+      const threshold = parseFloat(req.query.threshold as string) || 0.8;
+
+      const machines = await prisma.machine.findMany({
+        where: { maintenanceIntervalHours: { not: null }, status: { not: 'INACTIVE' } },
+        include: { currentOperator: true }
+      });
+
+      const result = machines
+        .filter(m => m.maintenanceIntervalHours! > 0)
+        .map(m => {
+          const hours = m.hoursSinceLastMaintenance || 0;
+          const interval = m.maintenanceIntervalHours!;
+          const pct = hours / interval;
+          const urgency = pct >= 1.0 ? 'critical' : pct >= threshold ? 'warning' : 'ok';
+          return {
+            id: m.id, code: m.code, brand: m.brand, model: m.model, type: m.type,
+            status: m.status, hoursSinceLastMaintenance: hours,
+            maintenanceIntervalHours: interval,
+            hoursRemaining: Math.max(0, interval - hours),
+            percentUsed: Math.round(pct * 100),
+            urgency, lastMaintenanceDate: m.lastMaintenanceDate,
+            currentOperator: m.currentOperator
+              ? { name: (m.currentOperator as any).name } : null
+          };
+        })
+        .filter(m => m.urgency !== 'ok')
+        .sort((a, b) => b.percentUsed - a.percentUsed);
+
+      res.json(result);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      res.status(500).json({ error: message });
+    }
+  }
+
   public async delete(req: Request, res: Response): Promise<void> {
     try {
       await machineRepository.delete(req.params.id);

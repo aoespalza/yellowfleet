@@ -31,7 +31,7 @@ CREATE UNIQUE INDEX "Role_name_key" ON "Role"("name");
 INSERT INTO "Role" ("id", "name", "description", "canCreateMachine", "canEditMachine", "canDeleteMachine", "canUpdateHourMeter", "canCreateContract", "canEditContract", "canDeleteContract", "canAssignMachine", "canCreateWorkOrder", "canEditWorkOrder", "canDeleteWorkOrder", "canCloseWorkOrder", "canEditLegalDocuments", "canCreateUser", "canEditUser", "canDeleteUser", "canManageRoles", "createdAt", "updatedAt")
 VALUES 
 ('a0000000-0000-0000-0000-000000000001', 'ADMIN', 'Administrador con todos los permisos', true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('a0000000-0000-0000-0000-000000000002', 'MANAGER', 'Gerente con permisos de gestión', true, true, false, true, true, true, false, true, true, true, true, true, false, false, false, false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('a0000000-0000-0000-0000-000000000002', 'MANAGER', 'Gerente con permisos de gestión', true, true, false, true, true, true, false, true, true, true, true, true, false, false, false, false, false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 ('a0000000-0000-0000-0000-000000000003', 'OPERATOR', 'Operador con permisos básicos', false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- Alter User table to change role to String

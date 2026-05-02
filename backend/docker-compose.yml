@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: yellow_machinery_erp
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -18,24 +18,33 @@ services:
       timeout: 5s
       retries: 5
 
-  app:
+  backend:
     build: .
-    container_name: yellow_machinery_app
+    container_name: yellow_machinery_backend
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/yellow_machinery_erp?schema=public"
+      DATABASE_URL: "postgresql://postgres:postgres@yellow_machinery_db:5432/yellow_machinery_erp?schema=public"
       JWT_SECRET: "your-super-secret-key-change-in-production"
       JWT_EXPIRES_IN: "24h"
       PORT: "3000"
-      NODE_ENV: "development"
+      NODE_ENV: "production"
     ports:
       - "3000:3000"
-    volumes:
-      - .:/app
-      - /app/node_modules
-    command: sh -c "npx prisma migrate deploy && npm run dev"
+    restart: unless-stopped
+    command: npm run start
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: yellow_machinery_frontend
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+    restart: unless-stopped
 
 volumes:
   postgres_data:

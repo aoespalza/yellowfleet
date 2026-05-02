@@ -21,6 +21,7 @@ export class NotificationController {
         leasingEnabled: true,
         documentsEnabled: true,
         workshopEnabled: true,
+        equipmentEnabled: true,
         host: '',
         port: 587,
         secure: false,
@@ -47,24 +48,26 @@ export class NotificationController {
 
   async saveConfig(req: Request, res: Response) {
     try {
-      const { notificationEmail, contractsEnabled, leasingEnabled, documentsEnabled, workshopEnabled, host, port, secure, user, password, from } = req.body;
+      console.log('[Notifications] saveConfig body:', req.body);
+      const { notificationEmail, contractsEnabled, leasingEnabled, documentsEnabled, workshopEnabled, equipmentEnabled, host, port, secure, user, password, from } = req.body;
 
       // Validar emails de notificación (permite múltiples separados por coma o punto y coma)
-      if (!notificationEmail) {
-        return res.status(400).json({ error: 'Email de notificación requerido' });
-      }
+      // Si no hay email, usar valor por defecto
+      const emailValue = notificationEmail || '';
+      let validEmails: string[] = [];
       
-      const emails = notificationEmail.split(/[,;]/).map((e: string) => e.trim()).filter((e: string) => e);
-      const validEmails = emails.filter((e: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e));
-      if (validEmails.length === 0) {
-        return res.status(400).json({ error: 'Al menos un email de notificación válido es requerido' });
+      if (emailValue.trim()) {
+        const emails = emailValue.split(/[,;]/).map((e: string) => e.trim()).filter((e: string) => e);
+        validEmails = emails.filter((e: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e));
       }
 
-      // Validar configuración SMTP si se proporciona
-      if (host && user) {
-        if (!password) {
-          return res.status(400).json({ error: 'Contraseña SMTP requerida' });
-        }
+      // Validar configuración SMTP - solo requiere password si es nuevo (no hay configuración previa)
+      const existingSmtp = await prisma.systemConfig.findFirst({
+        where: { key: 'smtp_config' }
+      });
+      
+      if (host && user && !existingSmtp && !password) {
+        return res.status(400).json({ error: 'Contraseña SMTP requerida para nueva configuración' });
       }
 
       const emailConfig = {
@@ -78,10 +81,11 @@ export class NotificationController {
 
       const notificationConfig = {
         notificationEmail,
-        contractsEnabled: contractsEnabled !== false,
-        leasingEnabled: leasingEnabled !== false,
-        documentsEnabled: documentsEnabled !== false,
-        workshopEnabled: workshopEnabled !== false
+        contractsEnabled: contractsEnabled !== false && contractsEnabled !== undefined,
+        leasingEnabled: leasingEnabled !== false && leasingEnabled !== undefined,
+        documentsEnabled: documentsEnabled !== false && documentsEnabled !== undefined,
+        workshopEnabled: workshopEnabled !== false && workshopEnabled !== undefined,
+        equipmentEnabled: equipmentEnabled !== false && equipmentEnabled !== undefined
       };
 
       // Guardar configuración de notificaciones
@@ -176,6 +180,15 @@ export class NotificationController {
   async checkWorkOrders(req: Request, res: Response) {
     try {
       const result = await notificationService.checkPendingWorkOrders();
+      return res.json(result);
+    } catch (error: any) {
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  async checkEquipment(req: Request, res: Response) {
+    try {
+      const result = await notificationService.checkPendingEquipment();
       return res.json(result);
     } catch (error: any) {
       return res.status(500).json({ error: error.message });

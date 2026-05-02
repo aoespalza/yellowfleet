@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native"]
 }
 
 datasource db {
@@ -287,11 +288,22 @@ model Operator {
   hireDate      DateTime?
   isActive      Boolean  @default(true)
   notes         String?
+  photoUrl      String?  // URL de la foto del operador
+  empresa       String?  // Empresa a la que pertenece
+  arl           String?  // ARL (Administradora de Riesgos Laborales)
+  eps           String?  // EPS (Entidad Promotora de Salud)
+  grupoSanguineo String? // Grupo sanguíneo
+  
+  // Cargo del operador
+  jobId         String?
+  job           Job?     @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   
   assignments   MachineOperatorAssignment[]
   machines      Machine[] @relation("CurrentOperator")
+  equipment     OperatorEquipment[]
 }
 
 model MachineOperatorAssignment {
@@ -309,4 +321,96 @@ model MachineOperatorAssignment {
   operator    Operator  @relation(fields: [operatorId], references: [id], onDelete: Cascade)
 
   @@unique([machineId, operatorId, startDate])
+}
+
+// ============================================
+// MÓDULO DE DOTACIÓN (EPP)
+// ============================================
+
+enum EquipmentCategory {
+  PROTECTION_CRANIAL    // Protección craneana (cascos)
+  PROTECTION_HANDS      // Protección de manos (guantes)
+  PROTECTION_FEET       // Protección de pies (botas)
+  PROTECTION_VISUAL     // Protección visual (gafas)
+  PROTECTION_RESPIRATORY // Protección respiratoria
+  VEST                  // Chalecos
+  PROTECTION_HEARING    // Protección auditiva
+  CLOTHING              // Ropa (camisas, pantalones, chaquetas)
+  OTHER                 // Otros
+}
+
+enum EquipmentSize {
+  XS
+  S
+  M
+  L
+  XL
+  XXL
+  XXXL
+}
+
+enum ClothingType {
+  PANTALON    // Pantalón
+  CAMISA      // Camisa
+  CHAQUETA    // Chaqueta
+  POLERA      // Polera
+  OTRO        // Otro tipo de ropa
+}
+
+model Equipment {
+  id                    String            @id @default(uuid())
+  name                  String
+  category              EquipmentCategory
+  clothingType          ClothingType?     // Tipo de prenda (solo para CLOTHING)
+  description           String?
+  defaultPeriodicityDays Int              // Periodicidad por defecto en días
+  hasSizes              Boolean           @default(false) // Si requiere talla
+  isActive              Boolean           @default(true)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  
+  deliveries            OperatorEquipment[]
+}
+
+model OperatorEquipment {
+  id                String         @id @default(uuid())
+  operatorId        String
+  equipmentId       String
+  deliveryDate      DateTime       @default(now())
+  nextDeliveryDate DateTime       // Fecha de próxima entrega
+  quantity          Int            @default(1)
+  size              EquipmentSize? // Talla (si aplica)
+  notes             String?
+  deliveredBy       String?        // ID del usuario que entrega
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  
+  operator          Operator       @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  equipment         Equipment      @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@unique([operatorId, equipmentId, deliveryDate])
+}
+
+// ============================================
+// MÓDULO DE CARGOS
+// ============================================
+
+model Job {
+  id                    String   @id @default(uuid())
+  name                  String   @unique
+  description           String?
+  hourlyRate            Float?   // Tarifa por hora (para control de horas extras)
+  isActive              Boolean  @default(true)
+  
+  // Tipos de máquina que puede operar este cargo
+  machineTypes          String[] @default([])
+  
+  // Categorías de EPP que recibe este cargo
+  equipmentCategories   String[] @default([])
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relación con operadores
+  operators             Operator[]
 }

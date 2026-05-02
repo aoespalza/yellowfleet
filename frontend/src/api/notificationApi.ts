@@ -6,6 +6,7 @@ export interface NotificationConfig {
   leasingEnabled: boolean;
   documentsEnabled: boolean;
   workshopEnabled: boolean;
+  equipmentEnabled: boolean;
   host?: string;
   port?: number;
   secure?: boolean;
@@ -26,6 +27,7 @@ export interface NotificationSummary {
   leasing: NotificationResult;
   documents: NotificationResult;
   workOrders: NotificationResult;
+  equipment: NotificationResult;
 }
 
 export const notificationApi = {

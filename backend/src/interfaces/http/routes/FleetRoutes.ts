@@ -25,7 +25,10 @@ const router = Router();
 
 // Rutas públicas (sin autenticación) - las más específicas primero
 router.get('/machines/:id/details-public', (req, res) => fleetController.getDetailsPublic(req, res));
+
+// Rutas públicas sin autenticación - listar máquinas
 router.get('/machines', (req, res) => fleetController.list(req, res));
+router.get('/machines/maintenance-due', authenticateToken, (req, res) => fleetController.getMaintenanceDue(req, res));
 router.get('/machines/:id', (req, res) => fleetController.getById(req, res));
 
 // Rutas protegidas - detalles completos (requieren autenticación)

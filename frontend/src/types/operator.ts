@@ -7,6 +7,17 @@ export interface Operator {
   hireDate?: string;
   isActive: boolean;
   notes?: string;
+  photoUrl?: string;
+  empresa?: string;
+  arl?: string;
+  eps?: string;
+  grupoSanguineo?: string;
+  jobId?: string;
+  job?: {
+    id: string;
+    name: string;
+    hourlyRate?: number;
+  };
   createdAt?: string;
   updatedAt?: string;
 }
@@ -19,6 +30,12 @@ export interface OperatorFormData {
   hireDate?: string;
   notes?: string;
   isActive?: boolean;
+  photoUrl?: string;
+  empresa?: string;
+  arl?: string;
+  eps?: string;
+  grupoSanguineo?: string;
+  jobId?: string;
 }
 
 export interface MachineOperatorAssignment {

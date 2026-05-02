@@ -16,6 +16,7 @@ export function NotificationsPage() {
     leasingEnabled: true,
     documentsEnabled: true,
     workshopEnabled: true,
+    equipmentEnabled: true,
     host: '',
     port: 587,
     secure: false,
@@ -242,6 +243,14 @@ export function NotificationsPage() {
               onChange={(e) => setConfig({ ...config, workshopEnabled: e.target.checked })}
             />
             <span>🔧 Notificar órdenes de taller pendientes</span>
+          </label>
+          <label className="checkbox-item">
+            <input
+              type="checkbox"
+              checked={config.equipmentEnabled}
+              onChange={(e) => setConfig({ ...config, equipmentEnabled: e.target.checked })}
+            />
+            <span>👕 Notificar dotación pendiente por cargo</span>
           </label>
         </div>
 

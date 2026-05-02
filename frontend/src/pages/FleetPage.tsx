@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { QRCodeSVG } from 'qrcode.react';
 import { machineApi } from '../api/machineApi';
 import { operatorApi } from '../api/operatorApi';
 import type { Machine, MachineFormData } from '../types/machine';
@@ -48,6 +49,9 @@ export function FleetPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingMachineId, setEditingMachineId] = useState<string | null>(null);
   const [formData, setFormData] = useState<MachineFormData>(initialFormData);
+
+  // Modal QR
+  const [qrMachine, setQrMachine] = useState<Machine | null>(null);
 
   // Modal de asignación de operador
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -124,7 +128,7 @@ export function FleetPage() {
         hourMeter: Number(formData.hourMeter),
         acquisitionValue: Number(formData.acquisitionValue),
         usefulLifeHours: Number(formData.usefulLifeHours),
-        commercialValue: formData.commercialValue !== '' ? Number(formData.commercialValue) : null,
+        commercialValue: formData.commercialValue != null ? Number(formData.commercialValue) : null,
       };
 
       if (editingMachineId) {
@@ -631,6 +635,13 @@ export function FleetPage() {
                       >
                         👤
                       </button>
+                      <button
+                        className="btn-history"
+                        onClick={() => setQrMachine(machine)}
+                        title="QR Operador"
+                      >
+                        📱
+                      </button>
                       <Link
                         to={`/fleet/${machine.id}/history`}
                         className="btn-history"
@@ -664,6 +675,54 @@ export function FleetPage() {
           </table>
         )}
       </div>
+
+      {/* Modal QR Operador */}
+      {qrMachine && (
+        <div className="modal-overlay" onClick={() => setQrMachine(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 360, textAlign: 'center' }}>
+            <div className="modal-header">
+              <h3>📱 QR — {qrMachine.code}</h3>
+              <button className="modal-close" onClick={() => setQrMachine(null)}>×</button>
+            </div>
+            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: 24 }}>
+              <p style={{ margin: 0, color: '#6b7280', fontSize: 13 }}>
+                El operador escanea este QR con la cámara del teléfono para acceder a la vista de la máquina.
+              </p>
+              <div style={{ background: 'white', padding: 16, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
+                <QRCodeSVG
+                  value={`${window.location.origin}/operador?maquina=${qrMachine.id}`}
+                  size={200}
+                  level="M"
+                  includeMargin={false}
+                />
+              </div>
+              <div style={{ fontSize: 13, color: '#374151' }}>
+                <strong>{qrMachine.brand} {qrMachine.model}</strong>
+                <div style={{ color: '#9ca3af', fontSize: 12, marginTop: 4 }}>
+                  {`${window.location.origin}/operador?maquina=${qrMachine.id}`}
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  const canvas = document.querySelector('canvas') as HTMLCanvasElement;
+                  if (canvas) {
+                    const a = document.createElement('a');
+                    a.download = `QR-${qrMachine.code}.png`;
+                    a.href = canvas.toDataURL();
+                    a.click();
+                  } else {
+                    // Fallback: abrir URL en nueva pestaña para imprimir
+                    window.open(`${window.location.origin}/operador?maquina=${qrMachine.id}`, '_blank');
+                  }
+                }}
+                style={{ background: '#f59e0b', border: 'none', color: '#111827', padding: '8px 20px', borderRadius: 6, fontWeight: 700, cursor: 'pointer', fontSize: 13 }}
+              >
+                Imprimir / Descargar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de asignación de operador */}
       {showAssignModal && (

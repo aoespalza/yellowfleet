@@ -16,6 +16,7 @@ export class CreateOperator {
     email?: string;
     hireDate?: Date;
     notes?: string;
+    photoUrl?: string;
   }): Promise<Operator> {
     const operator = new Operator({
       name: data.name,
@@ -24,6 +25,7 @@ export class CreateOperator {
       email: data.email,
       hireDate: data.hireDate,
       notes: data.notes,
+      photoUrl: data.photoUrl,
       isActive: true,
     });
 
@@ -77,6 +79,7 @@ export class UpdateOperator {
     hireDate?: Date;
     isActive?: boolean;
     notes?: string;
+    photoUrl?: string;
   }): Promise<Operator> {
     const operator = await this.repository.findById(id);
     if (!operator) {

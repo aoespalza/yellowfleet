@@ -12,6 +12,9 @@ import { FinancePage } from './pages/FinancePage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { OperativityPage } from './pages/OperativityPage';
 import OperatorsPage from './pages/OperatorsPage';
+import EquipmentPage from './pages/EquipmentPage';
+import JobsPage from './pages/JobsPage';
+import { OperatorMobilePage } from './pages/OperatorMobilePage';
 import './App.css';
 
 function AppNavigator() {
@@ -21,8 +24,8 @@ function AppNavigator() {
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [selectedContractId, setSelectedContractId] = useState<string | undefined>();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Limpiar el localStorage despues de leer
   useEffect(() => {
     const page = localStorage.getItem('YF_PAGE');
     if (page) {
@@ -39,99 +42,153 @@ function AppNavigator() {
     setCurrentPage(page);
   };
 
+  const navItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: '📊', section: 'principal' },
+    { id: 'fleet', label: 'Flota', icon: '🚜', section: 'principal' },
+    { id: 'operators', label: 'Operadores', icon: '👷', section: 'principal' },
+    { id: 'equipment', label: 'Dotación EPP', icon: '🛡️', section: 'principal' },
+    { id: 'jobs', label: 'Cargos', icon: '👔', section: 'principal' },
+    { id: 'contracts', label: 'Contratos', icon: '📄', section: 'operaciones' },
+    { id: 'workshop', label: 'Taller', icon: '🔧', section: 'operaciones' },
+    { id: 'finance', label: 'Finanzas', icon: '💰', section: 'operaciones' },
+    { id: 'operativity', label: 'Operatividad', icon: '📈', section: 'operaciones' },
+  ];
+
+  const getInitials = (name: string) => {
+    return name.charAt(0).toUpperCase();
+  };
+
+  const isSettingsActive = currentPage === 'users' || currentPage === 'notifications';
+
   return (
     <div className="app">
-      <nav className="app-nav">
-        <div className="app-nav__brand">YellowFleet</div>
-        <div className="app-nav__links">
-          <button
-            className={`app-nav__link ${currentPage === 'dashboard' ? 'app-nav__link--active' : ''}`}
-            onClick={() => setCurrentPage('dashboard')}
+      {/* Sidebar */}
+      <aside className={`sidebar ${sidebarCollapsed ? 'sidebar--collapsed' : ''}`}>
+        <div className="sidebar__header">
+          <div className="sidebar__brand">
+            <span className="sidebar__brand-icon">🚜</span>
+            {!sidebarCollapsed && <span>YellowFleet</span>}
+          </div>
+          <button 
+            className="sidebar__toggle"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            title={sidebarCollapsed ? 'Expandir menú' : 'Colapsar menú'}
           >
-            Dashboard
+            {sidebarCollapsed ? '▶' : '◀'}
           </button>
-          <button
-            className={`app-nav__link ${currentPage === 'fleet' ? 'app-nav__link--active' : ''}`}
-            onClick={() => setCurrentPage('fleet')}
-          >
-            Flota
-          </button>
-          <button
-            className={`app-nav__link ${currentPage === 'operators' ? 'app-nav__link--active' : ''}`}
-            onClick={() => setCurrentPage('operators')}
-          >
-            Operadores
-          </button>
-          <button
-            className={`app-nav__link ${currentPage === 'contracts' ? 'app-nav__link--active' : ''}`}
-            onClick={() => setCurrentPage('contracts')}
-          >
-            Contratos
-          </button>
-          <button
-            className={`app-nav__link ${currentPage === 'workshop' ? 'app-nav__link--active' : ''}`}
-            onClick={() => setCurrentPage('workshop')}
-          >
-            Taller
-          </button>
-          <button
-            className={`app-nav__link ${currentPage === 'finance' ? 'app-nav__link--active' : ''}`}
-            onClick={() => setCurrentPage('finance')}
-          >
-            Finanzas
-          </button>
-          <button
-            className={`app-nav__link ${currentPage === 'operativity' ? 'app-nav__link--active' : ''}`}
-            onClick={() => setCurrentPage('operativity')}
-          >
-            Operatividad
-          </button>
-          {user?.role === 'ADMIN' && (
-            <div className="app-nav__dropdown">
-              <button 
-                className={`app-nav__link app-nav__link--dropdown ${settingsOpen ? 'app-nav__link--active' : ''}`}
-                onClick={() => setSettingsOpen(!settingsOpen)}
+        </div>
+
+        <nav className="sidebar__nav">
+          {/* Sección Principal */}
+          <div className="sidebar__section">
+            <div className="sidebar__section-title">Principal</div>
+            {navItems.filter(item => item.section === 'principal').map(item => (
+              <button
+                key={item.id}
+                className={`sidebar__link ${currentPage === item.id ? 'sidebar__link--active' : ''}`}
+                onClick={() => {
+                  setCurrentPage(item.id);
+                  setSettingsOpen(false);
+                }}
               >
-                Configuraciones ▼
+                <span className="sidebar__link-icon">{item.icon}</span>
+                <span>{item.label}</span>
               </button>
-              {settingsOpen && (
-                <div className="app-nav__dropdown-menu">
-                  <button
-                    className={`app-nav__dropdown-item ${currentPage === 'users' ? 'app-nav__dropdown-item--active' : ''}`}
-                    onClick={() => {
-                      setCurrentPage('users');
-                      setSettingsOpen(false);
-                    }}
-                  >
-                    👤 Usuarios
-                  </button>
-                  <button
-                    className={`app-nav__dropdown-item ${currentPage === 'notifications' ? 'app-nav__dropdown-item--active' : ''}`}
-                    onClick={() => {
-                      setCurrentPage('notifications');
-                      setSettingsOpen(false);
-                    }}
-                  >
-                    🔔 Notificaciones
-                  </button>
-                </div>
-              )}
+            ))}
+          </div>
+
+          {/* Sección Operaciones */}
+          <div className="sidebar__section">
+            <div className="sidebar__section-title">Operaciones</div>
+            {navItems.filter(item => item.section === 'operaciones').map(item => (
+              <button
+                key={item.id}
+                className={`sidebar__link ${currentPage === item.id ? 'sidebar__link--active' : ''}`}
+                onClick={() => {
+                  setCurrentPage(item.id);
+                  setSettingsOpen(false);
+                }}
+              >
+                <span className="sidebar__link-icon">{item.icon}</span>
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Configuraciones (solo ADMIN) */}
+          {user?.role === 'ADMIN' && (
+            <div className="sidebar__section">
+              <div className="sidebar__section-title">Sistema</div>
+              <div className="sidebar__dropdown">
+                <button
+                  className={`sidebar__dropdown-trigger ${isSettingsActive ? 'sidebar__dropdown-trigger--active' : ''}`}
+                  onClick={() => setSettingsOpen(!settingsOpen)}
+                >
+                  <span className="sidebar__link-icon">⚙️</span>
+                  <span>Configuraciones</span>
+                  <span style={{ marginLeft: 'auto', fontSize: '10px' }}>▼</span>
+                </button>
+                {settingsOpen && (
+                  <div className="sidebar__dropdown-menu">
+                    <button
+                      className={`sidebar__dropdown-item ${currentPage === 'users' ? 'sidebar__dropdown-item--active' : ''}`}
+                      onClick={() => {
+                        setCurrentPage('users');
+                        setSettingsOpen(false);
+                      }}
+                    >
+                      <span>👤</span>
+                      <span>Usuarios</span>
+                    </button>
+                    <button
+                      className={`sidebar__dropdown-item ${currentPage === 'notifications' ? 'sidebar__dropdown-item--active' : ''}`}
+                      onClick={() => {
+                        setCurrentPage('notifications');
+                        setSettingsOpen(false);
+                      }}
+                    >
+                      <span>🔔</span>
+                      <span>Notificaciones</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
-        </div>
-        <div className="app-nav__user">
-          <span className="user-info">
-            {user?.username} ({user?.role})
-          </span>
-          <button className="btn-logout" onClick={handleLogout}>
-            Cerrar Sesión
-          </button>
-        </div>
-      </nav>
-      <main className="app-main">
+        </nav>
+
+        {/* Footer del sidebar */}
+        {!sidebarCollapsed && (
+          <div className="sidebar__footer">
+            <div className="sidebar__user">
+              <div className="sidebar__user-avatar">
+                {getInitials(user?.username || 'U')}
+              </div>
+              <div className="sidebar__user-info">
+                <div className="sidebar__user-name">{user?.username}</div>
+                <div className="sidebar__user-role">{user?.role}</div>
+              </div>
+            </div>
+            <button
+              onClick={() => window.open('/operador', '_blank')}
+              style={{ width: '100%', marginBottom: 8, background: '#451a03', border: '1px solid #f59e0b', color: '#f59e0b', padding: '6px 0', borderRadius: 6, fontSize: 12, cursor: 'pointer' }}
+            >
+              📱 Vista Operador
+            </button>
+            <button className="btn-logout" onClick={handleLogout}>
+              Cerrar Sesión
+            </button>
+          </div>
+        )}
+      </aside>
+
+      {/* Contenido principal */}
+      <main className={`app-main ${sidebarCollapsed ? 'app-main--expanded' : ''}`}>
         {currentPage === 'dashboard' && <DashboardPage onNavigate={handleNavigate} />}
         {currentPage === 'fleet' && <FleetPage />}
         {currentPage === 'operators' && <OperatorsPage />}
+        {currentPage === 'equipment' && <EquipmentPage />}
+        {currentPage === 'jobs' && <JobsPage />}
         {currentPage === 'contracts' && <ContractsPage initialContractId={selectedContractId} />}
         {currentPage === 'workshop' && <WorkshopPage />}
         {currentPage === 'finance' && <FinancePage />}
@@ -172,6 +229,14 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/operador"
+            element={
+              <ProtectedRoute>
+                <OperatorMobilePage onNavigate={(page) => { window.location.href = '/'; }} />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/fleet/:id/history"
             element={

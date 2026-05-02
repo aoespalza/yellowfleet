@@ -17,15 +17,18 @@ import AuthRoutes from './interfaces/http/routes/AuthRoutes';
 import RoleRoutes from './interfaces/http/routes/RoleRoutes';
 import NotificationRoutes from './interfaces/http/routes/NotificationRoutes';
 import OperatorRoutes from './interfaces/http/routes/OperatorRoutes';
+import EquipmentRoutes from './interfaces/http/routes/EquipmentRoutes';
+import JobRoutes from './interfaces/http/routes/JobRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-app.use(
-  cors({
-    origin: ['http://localhost:5173', 'http://localhost:3000', 'http://192.168.50.85:5173', 'http://192.168.50.85:3000', 'http://192.168.126.194:5173', 'http://192.168.126.194:3000'],
-    credentials: true,
-  })
-);
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? '*' 
+    : ['http://localhost:5173', 'http://localhost:3000', 'http://192.168.50.85:5173', 'http://192.168.50.85:3000', 'http://192.168.126.194:5173', 'http://192.168.126.194:3000'],
+  credentials: true,
+};
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -48,6 +51,8 @@ app.use('/api/finance', FinanceRoutes);
 app.use('/api/roles', RoleRoutes);
 app.use('/api/notifications', NotificationRoutes);
 app.use('/api/operators', OperatorRoutes);
+app.use('/api/equipment', EquipmentRoutes);
+app.use('/api/jobs', JobRoutes);
 
 
 // Global error handler
@@ -55,6 +60,17 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   console.error(err.stack);
   res.status(500).json({ error: 'Internal server error' });
 });
+
+// Serve frontend static files in production
+if (process.env.NODE_ENV === 'production') {
+  const frontendPath = path.join(__dirname, '../../frontend/dist');
+  app.use(express.static(frontendPath));
+
+  // Handle SPA routing - serve index.html for unknown routes
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(frontendPath, 'index.html'));
+  });
+}
 
 async function start() {
   await connectDatabase();

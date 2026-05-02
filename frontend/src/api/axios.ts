@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-// Change this to your server IP for network access
-const API_URL = 'http://192.168.126.194:3000/api'; // <-- Change IP here
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 const api = axios.create({
   baseURL: API_URL,

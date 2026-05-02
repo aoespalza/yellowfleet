@@ -11,6 +11,7 @@ export class PrismaOperatorRepository implements IOperatorRepository {
 
   async findAll(): Promise<Operator[]> {
     const operators = await prisma.operator.findMany({
+      include: { job: true },
       orderBy: { name: 'asc' }
     });
     return operators.map(op => new Operator(op));
@@ -19,13 +20,17 @@ export class PrismaOperatorRepository implements IOperatorRepository {
   async findActive(): Promise<Operator[]> {
     const operators = await prisma.operator.findMany({
       where: { isActive: true },
+      include: { job: true },
       orderBy: { name: 'asc' }
     });
     return operators.map(op => new Operator(op));
   }
 
   async findById(id: string): Promise<Operator | null> {
-    const operator = await prisma.operator.findUnique({ where: { id } });
+    const operator = await prisma.operator.findUnique({ 
+      where: { id },
+      include: { job: true }
+    });
     return operator ? new Operator(operator) : null;
   }
 

@@ -266,20 +266,233 @@ class NotificationService {
     leasing: NotificationResult;
     documents: NotificationResult;
     workOrders: NotificationResult;
+    equipment: NotificationResult;
+    maintenance: NotificationResult;
   }> {
     const results = await Promise.all([
       this.checkExpiringContracts(),
       this.checkPendingLeasingPayments(),
       this.checkExpiringDocuments(),
-      this.checkPendingWorkOrders()
+      this.checkPendingWorkOrders(),
+      this.checkPendingEquipment(),
+      this.checkMaintenanceDue()
     ]);
 
     return {
       contracts: results[0],
       leasing: results[1],
       documents: results[2],
-      workOrders: results[3]
+      workOrders: results[3],
+      equipment: results[4],
+      maintenance: results[5]
     };
+  }
+
+  async checkMaintenanceDue(): Promise<NotificationResult> {
+    const result: NotificationResult = { type: 'maintenance_due', count: 0, sent: 0, errors: [] };
+    try {
+      const config = await this.getNotificationConfig();
+      const emails = this.parseEmails(config.notificationEmail);
+      if (!config.workshopEnabled || emails.length === 0) return result;
+
+      const machines = await prisma.machine.findMany({
+        where: { maintenanceIntervalHours: { not: null }, status: { not: 'INACTIVE' } }
+      });
+
+      const critical = machines.filter(m =>
+        (m.hoursSinceLastMaintenance || 0) >= (m.maintenanceIntervalHours || Infinity)
+      );
+      const warning = machines.filter(m => {
+        const pct = (m.hoursSinceLastMaintenance || 0) / (m.maintenanceIntervalHours || 1);
+        return pct >= 0.8 && pct < 1.0;
+      });
+
+      if (critical.length === 0 && warning.length === 0) return result;
+      result.count = critical.length + warning.length;
+
+      for (const email of emails) {
+        const emailResult = await emailService.sendEmail({
+          to: email,
+          subject: `🔧 Alerta mantenimiento: ${critical.length} vencido(s), ${warning.length} próximo(s)`,
+          html: this.getMaintenanceDueEmailHtml(critical, warning)
+        });
+        if (emailResult.success) result.sent++;
+        else result.errors.push(`Error: ${emailResult.message}`);
+      }
+      return result;
+    } catch (error: any) {
+      result.errors.push(`Error: ${error.message}`);
+      return result;
+    }
+  }
+
+  private getMaintenanceDueEmailHtml(critical: any[], warning: any[]): string {
+    const row = (m: any, type: 'critical' | 'warning') => {
+      const hours = m.hoursSinceLastMaintenance || 0;
+      const interval = m.maintenanceIntervalHours;
+      const pct = Math.round((hours / interval) * 100);
+      const color = type === 'critical' ? '#dc2626' : '#f59e0b';
+      return `<tr>
+        <td style="padding:8px;border:1px solid #e5e7eb;">${m.code}</td>
+        <td style="padding:8px;border:1px solid #e5e7eb;">${m.brand} ${m.model}</td>
+        <td style="padding:8px;border:1px solid #e5e7eb;text-align:right;">${hours.toFixed(0)} / ${interval}</td>
+        <td style="padding:8px;border:1px solid #e5e7eb;text-align:center;color:${color};font-weight:bold;">${pct}%</td>
+        <td style="padding:8px;border:1px solid #e5e7eb;color:${color};font-weight:bold;">${type === 'critical' ? '🔴 VENCIDO' : '🟡 PRÓXIMO'}</td>
+      </tr>`;
+    };
+    return `<div style="font-family:Arial,sans-serif;max-width:700px;margin:0 auto;">
+      <h1 style="color:#f59e0b;">🔧 Alerta de Mantenimiento Preventivo</h1>
+      <p><strong>Máquinas con mantenimiento vencido:</strong> ${critical.length} &nbsp;|&nbsp; <strong>Próximas a vencer (≥80%):</strong> ${warning.length}</p>
+      <table style="width:100%;border-collapse:collapse;margin-top:12px;">
+        <thead><tr style="background:#f3f4f6;">
+          <th style="padding:8px;border:1px solid #e5e7eb;text-align:left;">Código</th>
+          <th style="padding:8px;border:1px solid #e5e7eb;text-align:left;">Máquina</th>
+          <th style="padding:8px;border:1px solid #e5e7eb;text-align:right;">Hrs usadas / Intervalo</th>
+          <th style="padding:8px;border:1px solid #e5e7eb;text-align:center;">% Uso</th>
+          <th style="padding:8px;border:1px solid #e5e7eb;">Estado</th>
+        </tr></thead>
+        <tbody>
+          ${critical.map(m => row(m, 'critical')).join('')}
+          ${warning.map(m => row(m, 'warning')).join('')}
+        </tbody>
+      </table>
+      <p style="margin-top:16px;color:#6b7280;font-size:12px;">Sistema de Gestión de Flota - YellowFleet</p>
+    </div>`;
+  }
+
+  // ============ DOTACIÓN PENDIENTE ============
+  
+  async checkPendingEquipment(): Promise<NotificationResult> {
+    const result: NotificationResult = { type: 'equipment_pending', count: 0, sent: 0, errors: [] };
+    
+    try {
+      const config = await this.getNotificationConfig();
+      const emails = this.parseEmails(config.notificationEmail);
+      if (!config.equipmentEnabled || emails.length === 0) {
+        return { ...result, errors: ['Notificaciones de dotación deshabilitadas'] };
+      }
+
+      // Obtener todos los operadores activos
+      const operators = await prisma.operator.findMany({
+        where: { isActive: true },
+        include: { job: true }
+      });
+
+      const operatorsWithPending: Array<{
+        operator: any;
+        pendingItems: Array<{ equipmentId: string; equipmentName: string; category: string }>;
+      }> = [];
+
+      for (const operator of operators) {
+        // Obtener equipos que ha recibido el operador
+        const deliveredEquipment = await prisma.operatorEquipment.findMany({
+          where: { operatorId: operator.id },
+          select: { equipmentId: true }
+        });
+        const deliveredIds = new Set(deliveredEquipment.map(e => e.equipmentId));
+
+        // Obtener todos los equipos activos
+        const allEquipment = await prisma.equipment.findMany({
+          where: { isActive: true }
+        });
+
+        // Si tiene cargo, filtrar solo los de su cargo
+        let relevantEquipment = allEquipment;
+        if (operator.jobId && operator.job) {
+          const job = operator.job as any;
+          const allowedCategories = job.equipmentCategories || [];
+          relevantEquipment = allEquipment.filter(eq => 
+            allowedCategories.includes(eq.category)
+          );
+        }
+
+        // Filtrar los que NO ha recibido
+        const pending = relevantEquipment
+          .filter(eq => !deliveredIds.has(eq.id))
+          .map(eq => ({
+            equipmentId: eq.id,
+            equipmentName: eq.name,
+            category: eq.category
+          }));
+
+        if (pending.length > 0) {
+          operatorsWithPending.push({ operator, pendingItems: pending });
+        }
+      }
+
+      if (operatorsWithPending.length > 0) {
+        result.count = operatorsWithPending.reduce((sum, op) => sum + op.pendingItems.length, 0);
+        
+        for (const email of emails) {
+          const emailResult = await emailService.sendEmail({
+            to: email,
+            subject: `👕 Dotación pendiente: ${operatorsWithPending.length} operador(es)`,
+            html: this.getPendingEquipmentEmailHtml(operatorsWithPending)
+          });
+          
+          if (emailResult.success) {
+            result.sent++;
+          } else {
+            result.errors.push(`Error: ${emailResult.message}`);
+          }
+        }
+      }
+
+      return result;
+    } catch (error: any) {
+      result.errors.push(`Error: ${error.message}`);
+      return result;
+    }
+  }
+
+  private getPendingEquipmentEmailHtml(operatorsWithPending: Array<{
+    operator: any;
+    pendingItems: Array<{ equipmentId: string; equipmentName: string; category: string }>;
+  }>): string {
+    const getCategoryLabel = (cat: string) => {
+      const labels: Record<string, string> = {
+        PROTECTION_CRANIAL: 'Protección Craneana',
+        PROTECTION_HANDS: 'Protección de Manos',
+        PROTECTION_FEET: 'Protección de Pies',
+        PROTECTION_VISUAL: 'Protección Visual',
+        PROTECTION_RESPIRATORY: 'Protección Respiratoria',
+        VEST: 'Chalecos',
+        PROTECTION_HEARING: 'Protección Auditiva',
+        CLOTHING: 'Ropa',
+        OTHER: 'Otros'
+      };
+      return labels[cat] || cat;
+    };
+
+    const totalPending = operatorsWithPending.reduce((sum, op) => sum + op.pendingItems.length, 0);
+
+    return `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #9c27b0;">👕 Dotación Pendiente por Cargo</h1>
+        <p><strong>Total operadores con dotación pendiente:</strong> ${operatorsWithPending.length}</p>
+        <p><strong>Total elementos pendientes:</strong> ${totalPending}</p>
+        
+        ${operatorsWithPending.map(({ operator, pendingItems }) => `
+          <div style="margin: 20px 0; padding: 15px; background: #f3f4f6; border-radius: 8px;">
+            <h3 style="margin: 0 0 10px 0;">${operator.name} ${operator.job ? `- ${(operator.job as any).name}` : '- Sin cargo'}</h3>
+            <ul style="margin: 0; padding-left: 20px;">
+              ${pendingItems.map(item => `
+                <li><strong>${item.equipmentName}</strong> (${getCategoryLabel(item.category)})</li>
+              `).join('')}
+            </ul>
+            <p style="margin: 10px 0 0 0; color: #6b7280; font-size: 12px;">
+              ${pendingItems.length} elemento(s) pendiente(s)
+            </p>
+          </div>
+        `).join('')}
+        
+        <hr style="border: 1px solid #e5e7eb; margin: 20px 0;">
+        <p style="color: #6b7280; font-size: 12px;">
+          Este email se envía diariamente a las 8:00 AM<br>
+          Sistema de Gestión de Flota - YellowFleet
+        </p>
+      </div>
+    `;
   }
 
   private async getNotificationConfig() {

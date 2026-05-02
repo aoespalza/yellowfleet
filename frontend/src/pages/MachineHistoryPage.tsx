@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import * as XLSX from 'xlsx';
@@ -7,6 +8,7 @@ import { machineApi } from '../api/machineApi';
 import { workOrderApi, type WorkOrderLog } from '../api/workOrderApi';
 import type { WorkOrder } from '../types/workOrder';
 import { LegalDocumentsCard } from '../components/LegalDocumentsCard';
+import { MachinePDFReport } from '../components/MachinePDFReport';
 import './MachineHistoryPage.css';
 
 export function MachineHistoryPage() {
@@ -236,6 +238,7 @@ export function MachineHistoryPage() {
   }
 
   return (
+    <>
     <div className="history-layout">
       {/* Header con menú */}
       <header className="history-header">
@@ -270,6 +273,13 @@ export function MachineHistoryPage() {
           </button>
         </nav>
         <div className="header-machine">
+          <button
+            onClick={() => window.print()}
+            style={{ marginRight: 12, background: '#f59e0b', border: 'none', color: '#111827', padding: '6px 14px', borderRadius: 6, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+            title="Genera un PDF con la hoja de vida completa de la máquina"
+          >
+            🖨️ Exportar PDF
+          </button>
           <span className="machine-code">{details.code}</span>
           <span className={`machine-status ${getStatusBadgeClass(details.status)}`}>
             {details.status === 'AVAILABLE' && '✅ Disponible'}
@@ -764,6 +774,14 @@ export function MachineHistoryPage() {
           </div>
         </div>
       )}
+
     </div>
+
+    {/* Portal directo a body para que el CSS de impresión funcione correctamente */}
+    {createPortal(
+      <MachinePDFReport details={details} workOrders={workOrders} />,
+      document.body
+    )}
+    </>
   );
 }

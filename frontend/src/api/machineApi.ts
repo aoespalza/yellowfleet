@@ -161,6 +161,16 @@ export const machineApi = {
     return response.data;
   },
 
+  getMaintenanceDue: async (): Promise<Array<{
+    id: string; code: string; brand: string; model: string; type: string;
+    status: string; hoursSinceLastMaintenance: number; maintenanceIntervalHours: number;
+    hoursRemaining: number; percentUsed: number; urgency: 'critical' | 'warning';
+    lastMaintenanceDate: string | null; currentOperator: { name: string } | null;
+  }>> => {
+    const response = await api.get('/fleet/machines/maintenance-due');
+    return response.data;
+  },
+
   getExpiringLegalDocuments: async (days: number = 30): Promise<Array<{
     id: string;
     machineId: string;

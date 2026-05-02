@@ -18,5 +18,6 @@ router.post('/check/contracts', authenticateToken, authorizeRole('ADMIN'), (req,
 router.post('/check/leasing', authenticateToken, authorizeRole('ADMIN'), (req, res) => controller.checkLeasing(req, res));
 router.post('/check/documents', authenticateToken, authorizeRole('ADMIN'), (req, res) => controller.checkDocuments(req, res));
 router.post('/check/workorders', authenticateToken, authorizeRole('ADMIN'), (req, res) => controller.checkWorkOrders(req, res));
+router.post('/check/equipment', authenticateToken, authorizeRole('ADMIN'), (req, res) => controller.checkEquipment(req, res));
 
 export default router;
