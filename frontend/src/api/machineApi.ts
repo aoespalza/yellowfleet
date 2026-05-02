@@ -123,7 +123,10 @@ export const machineApi = {
     await api.delete(`/fleet/machines/${id}`);
   },
 
-  updateHourMeter: async (id: string, hourMeter: number): Promise<{ hourMeter: number }> => {
+  updateHourMeter: async (id: string, hourMeter: number): Promise<{
+    hourMeter: number;
+    maintenanceStatus: { hoursSinceLastMaintenance: number; maintenanceIntervalHours: number; percentUsed: number; isDue: boolean; } | null;
+  }> => {
     const response = await api.patch(`/fleet/machines/${id}/hourmeter`, { hourMeter });
     return response.data;
   },

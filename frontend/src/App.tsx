@@ -233,7 +233,7 @@ function App() {
             path="/operador"
             element={
               <ProtectedRoute>
-                <OperatorMobilePage onNavigate={(page) => { window.location.href = '/'; }} />
+                <OperatorMobilePage onNavigate={() => { window.location.href = '/'; }} />
               </ProtectedRoute>
             }
           />
