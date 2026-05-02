@@ -21,6 +21,13 @@ export interface MachineProps {
   status: MachineStatus;
   currentLocation?: string;
   currentOperatorId?: string | null;
+  // Mantenimiento preventivo
+  hoursSinceLastMaintenance?: number | null;
+  maintenanceIntervalHours?: number | null;
+  lastMaintenanceDate?: Date | null;
+  previousStatus?: string | null;
+  commercialValue?: number | null;
+  imageUrl?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -40,6 +47,12 @@ export class Machine {
   private _status: MachineStatus;
   private _currentLocation?: string;
   readonly currentOperatorId?: string | null;
+  readonly hoursSinceLastMaintenance?: number | null;
+  readonly maintenanceIntervalHours?: number | null;
+  readonly lastMaintenanceDate?: Date | null;
+  readonly previousStatus?: string | null;
+  readonly commercialValue?: number | null;
+  readonly imageUrl?: string | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 
@@ -58,6 +71,12 @@ export class Machine {
     this._status = props.status;
     this._currentLocation = props.currentLocation;
     this.currentOperatorId = props.currentOperatorId;
+    this.hoursSinceLastMaintenance = props.hoursSinceLastMaintenance;
+    this.maintenanceIntervalHours = props.maintenanceIntervalHours;
+    this.lastMaintenanceDate = props.lastMaintenanceDate;
+    this.previousStatus = props.previousStatus;
+    this.commercialValue = props.commercialValue;
+    this.imageUrl = props.imageUrl;
     this.createdAt = props.createdAt || new Date();
     this.updatedAt = props.updatedAt || new Date();
   }
