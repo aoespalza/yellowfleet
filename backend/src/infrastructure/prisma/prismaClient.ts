@@ -1,17 +1,41 @@
 import { PrismaClient } from '@prisma/client';
+import { AsyncLocalStorage } from 'async_hooks';
 
-const prismaClientSingleton = () => {
-  return new PrismaClient();
-};
+export interface RLSContext {
+  userId: string;
+  userRole: string;
+}
 
-type PrismaClientSingleton = ReturnType<typeof prismaClientSingleton>;
+export const rlsStorage = new AsyncLocalStorage<RLSContext>();
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClientSingleton | undefined;
-};
+const basePrisma = new PrismaClient({ log: ['error', 'warn'] });
 
-const prisma = globalForPrisma.prisma ?? prismaClientSingleton();
+// Cada query autenticada corre dentro de una TX que:
+// 1. Cambia el rol a yf_app (activa RLS)
+// 2. Inyecta app.user_id y app.user_role como settings locales
+// 3. Ejecuta la query original
+// Si no hay contexto (login, health), corre como yf_user (superuser → omite RLS)
+const extended = basePrisma.$extends({
+  query: {
+    $allModels: {
+      async $allOperations({ args, query }) {
+        const ctx = rlsStorage.getStore();
 
-export default prisma;
+        if (!ctx) {
+          return query(args);
+        }
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+        const [, , , result] = await basePrisma.$transaction([
+          basePrisma.$executeRaw`SET LOCAL ROLE yf_app`,
+          basePrisma.$executeRaw`SELECT set_config('app.user_id', ${ctx.userId}, true)`,
+          basePrisma.$executeRaw`SELECT set_config('app.user_role', ${ctx.userRole}, true)`,
+          query(args) as any,
+        ]);
+
+        return result;
+      },
+    },
+  },
+});
+
+export default extended as unknown as PrismaClient;

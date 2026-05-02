@@ -1,10 +1,10 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../prisma/prismaClient';
 
-export const prisma = new PrismaClient();
+export { prisma };
 
 export async function connectDatabase() {
   try {
-    await prisma.$connect();
+    await (prisma as any).$connect();
     console.log('Database connected successfully');
   } catch (error) {
     console.error('Database connection error:', error);
@@ -13,5 +13,5 @@ export async function connectDatabase() {
 }
 
 export async function disconnectDatabase() {
-  await prisma.$disconnect();
+  await (prisma as any).$disconnect();
 }

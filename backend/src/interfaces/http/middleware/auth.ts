@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { rlsStorage } from '../../../infrastructure/prisma/prismaClient';
 
 export interface AuthRequest extends Request {
   userId?: string;
@@ -18,11 +19,12 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
   try {
     const secret = process.env.JWT_SECRET || 'your-super-secret-key-change-in-production';
     const decoded = jwt.verify(token, secret) as { id: string; username: string; role: string };
-    
+
     req.userId = decoded.id;
     req.userRole = decoded.role;
-    
-    next();
+
+    // Propagar contexto RLS: cada query autenticada corre como yf_app con las políticas del rol
+    rlsStorage.run({ userId: decoded.id, userRole: decoded.role }, next);
   } catch (error) {
     res.status(403).json({ error: 'Invalid or expired token' });
   }
