@@ -134,6 +134,10 @@ export class PrismaMachineRepository implements IMachineRepository {
       status: this.mapPrismaStatusToDomain(prismaMachine.status),
       currentLocation: prismaMachine.currentLocation ?? '',
       currentOperatorId: prismaMachine.currentOperatorId ?? null,
+      hoursSinceLastMaintenance: prismaMachine.hoursSinceLastMaintenance ?? null,
+      maintenanceIntervalHours: prismaMachine.maintenanceIntervalHours ?? null,
+      lastMaintenanceDate: prismaMachine.lastMaintenanceDate ?? null,
+      previousStatus: prismaMachine.previousStatus ?? null,
       createdAt: prismaMachine.createdAt,
       updatedAt: prismaMachine.updatedAt,
     });

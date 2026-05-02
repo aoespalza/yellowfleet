@@ -17,6 +17,10 @@ export interface MachineProps {
   status: MachineStatus;
   currentLocation: string;
   currentOperatorId?: string | null;
+  hoursSinceLastMaintenance?: number | null;
+  maintenanceIntervalHours?: number | null;
+  lastMaintenanceDate?: Date | null;
+  previousStatus?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -132,5 +136,21 @@ export class Machine {
 
   get currentOperatorId() {
     return this.props.currentOperatorId;
+  }
+
+  get hoursSinceLastMaintenance() {
+    return this.props.hoursSinceLastMaintenance;
+  }
+
+  get maintenanceIntervalHours() {
+    return this.props.maintenanceIntervalHours;
+  }
+
+  get lastMaintenanceDate() {
+    return this.props.lastMaintenanceDate;
+  }
+
+  get previousStatus() {
+    return this.props.previousStatus;
   }
 }
