@@ -172,7 +172,7 @@ export function MachinePDFReport({ details, workOrders }: Props) {
             <thead>
               <tr>
                 <th>Tipo</th><th>Estado</th><th>Entrada</th><th>Salida</th>
-                <th>Hrs Paro</th><th>Repuestos</th><th>M. de Obra</th><th>Total</th>
+                <th>Días Paro</th><th>Repuestos</th><th>M. de Obra</th><th>Total</th>
               </tr>
             </thead>
             <tbody>
@@ -182,7 +182,7 @@ export function MachinePDFReport({ details, workOrders }: Props) {
                   <td>{WO_STATUS[wo.status] || wo.status}</td>
                   <td>{fmtDate(wo.entryDate)}</td>
                   <td>{wo.exitDate ? fmtDate(wo.exitDate) : '—'}</td>
-                  <td style={{ textAlign: 'right' }}>{wo.downtimeHours?.toLocaleString() || '—'}</td>
+                  <td style={{ textAlign: 'right' }}>{wo.downtimeHours != null ? Math.round(wo.downtimeHours / 24) : '—'}</td>
                   <td style={{ textAlign: 'right' }}>{fmt(wo.sparePartsCost || 0)}</td>
                   <td style={{ textAlign: 'right' }}>{fmt(wo.laborCost || 0)}</td>
                   <td style={{ textAlign: 'right', fontWeight: 700 }}>{fmt(wo.totalCost || 0)}</td>
@@ -193,7 +193,7 @@ export function MachinePDFReport({ details, workOrders }: Props) {
               <tr>
                 <td colSpan={4} style={{ fontWeight: 700 }}>TOTALES</td>
                 <td style={{ textAlign: 'right', fontWeight: 700 }}>
-                  {workOrders.reduce((s, wo) => s + (wo.downtimeHours || 0), 0).toLocaleString()} hrs
+                  {Math.round(workOrders.reduce((s, wo) => s + (wo.downtimeHours || 0), 0) / 24)} días
                 </td>
                 <td style={{ textAlign: 'right', fontWeight: 700 }}>
                   {fmt(workOrders.reduce((s, wo) => s + (wo.sparePartsCost || 0), 0))}

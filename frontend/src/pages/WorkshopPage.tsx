@@ -451,7 +451,7 @@ export function WorkshopPage() {
         <div className="metric-card metric-card--time">
           <div className="metric-icon">⏱️</div>
           <div className="metric-content">
-            <span className="metric-value">{metrics.totalDowntime}h</span>
+            <span className="metric-value">{Math.round(metrics.totalDowntime / 24)} días</span>
             <span className="metric-label">Horas Paro</span>
           </div>
         </div>
@@ -568,7 +568,7 @@ export function WorkshopPage() {
                     )}
                     <div className="order-info">
                       <label>Días Inactividad</label>
-                      <span className="order-value">{selectedOrder.downtimeHours || 0}d</span>
+                      <span className="order-value">{Math.round((selectedOrder.downtimeHours || 0) / 24)} días</span>
                     </div>
                     <div className="order-info">
                       <label>Repuestos</label>

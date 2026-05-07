@@ -21,6 +21,10 @@ function formatHours(hours: number): string {
   return `${Math.round(hours)}h`;
 }
 
+function formatDays(hours: number): string {
+  return `${Math.round(hours / 24)} días`;
+}
+
 type TabType = 'uptime' | 'workshop';
 
 export function OperativityPage() {
@@ -101,8 +105,8 @@ export function OperativityPage() {
       },
       {
         id: 'totalDowntime',
-        title: 'Horas Inactivas',
-        value: formatHours(totalDowntime),
+        title: 'Días Inactivos',
+        value: formatDays(totalDowntime),
         variant: 'info' as const,
         icon: '⏱️',
         subtitle: 'Tiempo total en taller',
@@ -328,7 +332,7 @@ export function OperativityPage() {
                         <input 
                           type="text" 
                           name="downtimeHours" 
-                          placeholder="Horas Inact." 
+                          placeholder="Días Inact."
                           value={filters.downtimeHours} 
                           onChange={handleFilterChange} 
                           className="filter-input" 
@@ -367,7 +371,7 @@ export function OperativityPage() {
                         <td className="cost">{formatCurrency(m.sparePartsCost)}</td>
                         <td className="cost">{formatCurrency(m.laborCost)}</td>
                         <td className="cost">{formatCurrency(m.totalCost)}</td>
-                        <td>{formatHours(m.downtimeHours)}</td>
+                        <td>{formatDays(m.downtimeHours)}</td>
                         <td className="loss">{formatCurrency(m.lostIncome)}</td>
                         <td>{m.lastMaintenanceDate ? new Date(m.lastMaintenanceDate).toLocaleDateString('es-CL') : '-'}</td>
                       </tr>

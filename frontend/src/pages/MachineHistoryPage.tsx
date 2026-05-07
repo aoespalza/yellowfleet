@@ -391,7 +391,7 @@ export function MachineHistoryPage() {
                     'Costo Repuestos': wo.sparePartsCost,
                     'Costo Mano de Obra': wo.laborCost,
                     'Costo Total': wo.totalCost,
-                    'Horas Parada': wo.downtimeHours,
+                    'Días en Taller': Math.round((wo.downtimeHours || 0) / 24),
                   }));
                   import('xlsx').then(XLSX => {
                     const ws = XLSX.utils.json_to_sheet(rows);
@@ -453,7 +453,7 @@ export function MachineHistoryPage() {
                                     <th style={{ textAlign: 'right' }}>Repuestos</th>
                                     <th style={{ textAlign: 'right' }}>M. de Obra</th>
                                     <th style={{ textAlign: 'right' }}>Total</th>
-                                    <th style={{ textAlign: 'right' }}>Hrs Parada</th>
+                                    <th style={{ textAlign: 'right' }}>Días en Taller</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -466,7 +466,7 @@ export function MachineHistoryPage() {
                                       <td style={{ textAlign: 'right' }}>${wo.sparePartsCost.toLocaleString('es-CL')}</td>
                                       <td style={{ textAlign: 'right' }}>${wo.laborCost.toLocaleString('es-CL')}</td>
                                       <td style={{ textAlign: 'right', fontWeight: 600 }}>${wo.totalCost.toLocaleString('es-CL')}</td>
-                                      <td style={{ textAlign: 'right' }}>{wo.downtimeHours} h</td>
+                                      <td style={{ textAlign: 'right' }}>{Math.round((wo.downtimeHours || 0) / 24)}</td>
                                     </tr>
                                   ))}
                                 </tbody>
@@ -476,7 +476,7 @@ export function MachineHistoryPage() {
                                     <td style={{ textAlign: 'right' }}>${activeList.reduce((s, w) => s + w.sparePartsCost, 0).toLocaleString('es-CL')}</td>
                                     <td style={{ textAlign: 'right' }}>${activeList.reduce((s, w) => s + w.laborCost, 0).toLocaleString('es-CL')}</td>
                                     <td style={{ textAlign: 'right' }}>${activeList.reduce((s, w) => s + w.totalCost, 0).toLocaleString('es-CL')}</td>
-                                    <td style={{ textAlign: 'right' }}>{activeList.reduce((s, w) => s + w.downtimeHours, 0)} h</td>
+                                    <td style={{ textAlign: 'right' }}>{Math.round(activeList.reduce((s, w) => s + (w.downtimeHours || 0), 0) / 24)}</td>
                                   </tr>
                                 </tfoot>
                               </table>
