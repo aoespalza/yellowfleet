@@ -335,24 +335,42 @@ export class FinanceService {
       this.workOrderRepository.findAll(),
     ]);
 
-    // Obtener tarifas por hora promedio de contratos
+    // Mapa machineId → tipo para lookup rápido
+    const machineTypeMap = new Map<string, string>(
+      machines.map(m => [m.id, (m as any).type as string])
+    );
+
+    // Calcular tarifa promedio por tipo de máquina y global como fallback
     const contracts = await this.contractRepository.findAll();
-    let avgHourlyRate = 50000; // Valor por defecto
-    let totalRates = 0;
-    let rateCount = 0;
+    const ratesByType = new Map<string, { total: number; count: number }>();
+    let globalTotal = 0;
+    let globalCount = 0;
 
     for (const contract of contracts) {
       const assignments = contract.getAssignments();
       for (const assignment of assignments) {
         if (assignment.hourlyRate && assignment.hourlyRate > 0) {
-          totalRates += assignment.hourlyRate;
-          rateCount++;
+          const machineType = machineTypeMap.get(assignment.machineId);
+          if (machineType) {
+            const existing = ratesByType.get(machineType) || { total: 0, count: 0 };
+            ratesByType.set(machineType, {
+              total: existing.total + assignment.hourlyRate,
+              count: existing.count + 1,
+            });
+          }
+          globalTotal += assignment.hourlyRate;
+          globalCount++;
         }
       }
     }
-    if (rateCount > 0) {
-      avgHourlyRate = totalRates / rateCount;
-    }
+
+    const globalAvgRate = globalCount > 0 ? globalTotal / globalCount : 50000;
+
+    const getRateForType = (type: string): number => {
+      const entry = ratesByType.get(type);
+      if (entry && entry.count > 0) return entry.total / entry.count;
+      return globalAvgRate;
+    };
 
     const results: WorkshopImpactResult[] = [];
 
@@ -364,8 +382,10 @@ export class FinanceService {
       const downtimeHours = machineWorkOrders.reduce((sum, wo) => sum + (wo.downtimeHours || 0), 0);
       const maintenanceCount = machineWorkOrders.length;
 
-      // Ingresos perdidos = horas de inactividad * tarifa promedio
-      const lostIncome = downtimeHours * avgHourlyRate;
+      // Ingresos perdidos = horas de inactividad * tarifa promedio del mismo tipo de equipo
+      const machineType = (machine as any).type as string;
+      const hourlyRate = getRateForType(machineType);
+      const lostIncome = downtimeHours * hourlyRate;
 
       // Obtener última orden de trabajo
       const lastWorkOrder = machineWorkOrders.sort((a, b) => 
