@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { machineApi } from '../api/machineApi';
 import { workOrderApi } from '../api/workOrderApi';
 import type { Machine } from '../types/machine';
+import jsQR from 'jsqr';
 
 export function OperatorMobilePage({ onNavigate }: { onNavigate?: (page: string) => void }) {
   const { user, logout } = useAuth();
@@ -15,6 +16,77 @@ export function OperatorMobilePage({ onNavigate }: { onNavigate?: (page: string)
   const [newHourMeter, setNewHourMeter] = useState('');
   const [hourMsg, setHourMsg] = useState<{ type: 'ok' | 'error'; text: string } | null>(null);
   const [savingHours, setSavingHours] = useState(false);
+
+  // Scanner QR
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const rafRef = useRef<number>(0);
+
+  const stopScanner = useCallback(() => {
+    cancelAnimationFrame(rafRef.current);
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current = null;
+    setScannerOpen(false);
+    setScanError(null);
+  }, []);
+
+  const scanFrame = useCallback(() => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas || video.readyState !== video.HAVE_ENOUGH_DATA) {
+      rafRef.current = requestAnimationFrame(scanFrame);
+      return;
+    }
+    const ctx = canvas.getContext('2d')!;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imageData.data, imageData.width, imageData.height);
+    if (code?.data) {
+      try {
+        const url = new URL(code.data);
+        const id = url.searchParams.get('maquina');
+        if (id) {
+          stopScanner();
+          // Navegar a la misma página con el parámetro de la máquina
+          window.location.href = `${window.location.pathname}?maquina=${id}`;
+          return;
+        }
+      } catch {
+        // QR válido pero no es URL de YellowFleet, seguir escaneando
+      }
+    }
+    rafRef.current = requestAnimationFrame(scanFrame);
+  }, [stopScanner]);
+
+  const startScanner = useCallback(async () => {
+    setScanError(null);
+    setScannerOpen(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
+      streamRef.current = stream;
+      // Dar tiempo a que el modal monte el video
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play();
+          rafRef.current = requestAnimationFrame(scanFrame);
+        }
+      }, 100);
+    } catch {
+      setScanError('No se pudo acceder a la cámara. Verifica los permisos en tu navegador.');
+      setScannerOpen(false);
+    }
+  }, [scanFrame]);
+
+  // Limpiar stream al desmontar
+  useEffect(() => () => { stopScanner(); }, [stopScanner]);
 
   // Formulario de reporte de falla
   const [showFaultForm, setShowFaultForm] = useState(false);
@@ -133,17 +205,17 @@ export function OperatorMobilePage({ onNavigate }: { onNavigate?: (page: string)
         {loading ? (
           <div style={{ textAlign: 'center', padding: 48, color: '#9ca3af' }}>Cargando...</div>
         ) : !machine ? (
-          <div style={{ textAlign: 'center', padding: 48 }}>
+          <div style={{ textAlign: 'center', padding: '48px 16px' }}>
             <div style={{ fontSize: 64, marginBottom: 16 }}>📷</div>
             <h2 style={{ color: '#f59e0b', marginBottom: 8 }}>Escanea el QR</h2>
-            <p style={{ color: '#9ca3af', fontSize: 14, lineHeight: 1.6 }}>
-              Apunta la cámara de tu teléfono al código QR pegado en la máquina para acceder a su panel de operación.
+            <p style={{ color: '#9ca3af', fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>
+              Usa la cámara para escanear el código QR pegado en la máquina.
             </p>
-            {!machineIdFromQR && (
-              <p style={{ color: '#4b5563', fontSize: 12, marginTop: 16 }}>
-                Si ya escaneaste el QR y ves este mensaje, verifica que la URL sea correcta o pide el código QR al supervisor.
-              </p>
-            )}
+            <button
+              onClick={startScanner}
+              style={{ background: '#f59e0b', border: 'none', color: '#111827', padding: '14px 28px', borderRadius: 10, fontWeight: 700, fontSize: 16, cursor: 'pointer', width: '100%', maxWidth: 280 }}>
+              📷 Abrir cámara
+            </button>
             {machineIdFromQR && (
               <p style={{ color: '#dc2626', fontSize: 13, marginTop: 16 }}>
                 No se encontró la máquina con ese código. Verifica el QR.
@@ -280,6 +352,41 @@ export function OperatorMobilePage({ onNavigate }: { onNavigate?: (page: string)
           </>
         )}
       </div>
+      {/* Modal scanner QR */}
+      {scannerOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: '#000', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ color: '#f59e0b', fontWeight: 700, fontSize: 16 }}>📷 Apunta al QR de la máquina</span>
+            <button onClick={stopScanner}
+              style={{ background: '#374151', border: 'none', color: '#f9fafb', padding: '8px 16px', borderRadius: 8, fontSize: 14, cursor: 'pointer' }}>
+              ✕ Cerrar
+            </button>
+          </div>
+          <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+            <video ref={videoRef} playsInline muted
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            {/* Marco guía */}
+            <div style={{
+              position: 'absolute', top: '50%', left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 220, height: 220,
+              border: '3px solid #f59e0b', borderRadius: 12,
+              boxShadow: '0 0 0 9999px rgba(0,0,0,0.5)'
+            }} />
+            <p style={{ position: 'absolute', bottom: 24, width: '100%', textAlign: 'center', color: '#d1d5db', fontSize: 13 }}>
+              Centra el código QR dentro del recuadro
+            </p>
+          </div>
+          {scanError && (
+            <div style={{ padding: 16, background: '#7f1d1d', color: '#fca5a5', textAlign: 'center', fontSize: 14 }}>
+              {scanError}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Canvas oculto para procesar frames */}
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
     </div>
   );
 }
