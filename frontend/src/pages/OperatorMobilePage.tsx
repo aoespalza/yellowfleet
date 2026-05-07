@@ -69,9 +69,13 @@ export function OperatorMobilePage({ onNavigate }: { onNavigate?: (page: string)
   const navigateToMachine = useCallback((qrData: string) => {
     try {
       const url = new URL(qrData);
+      // Formato nuevo: /operador?maquina=ID
       const id = url.searchParams.get('maquina');
-      if (id) { window.location.href = `${window.location.pathname}?maquina=${id}`; return true; }
-    } catch { /* no es URL de YellowFleet */ }
+      if (id) { window.location.href = `/operador?maquina=${id}`; return true; }
+      // Formato hoja de vida: /fleet/:id/history
+      const match = url.pathname.match(/\/fleet\/([^/]+)\/history/);
+      if (match) { window.location.href = `/operador?maquina=${match[1]}`; return true; }
+    } catch { /* no es URL */ }
     return false;
   }, []);
 

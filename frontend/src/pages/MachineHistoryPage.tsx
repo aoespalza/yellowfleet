@@ -563,6 +563,11 @@ export function MachineHistoryPage() {
                 <QRCodeSVG value={`${window.location.origin}/fleet/${details.id}/history`} size={140} level="M" includeMargin={false} />
                 <span className="qr-label">Escanea para consultar</span>
               </div>
+              <a
+                href={`/operador?maquina=${details.id}`}
+                style={{ display: 'block', marginTop: 10, background: '#f59e0b', color: '#111827', padding: '10px 0', borderRadius: 8, fontWeight: 700, fontSize: 14, textAlign: 'center', textDecoration: 'none' }}>
+                📱 Vista Operador
+              </a>
             </div>
             <div className="sidebar-section">
               <h3>📊 Estadísticas Rápidas</h3>
