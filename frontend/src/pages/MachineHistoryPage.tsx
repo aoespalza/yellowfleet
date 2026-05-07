@@ -5,7 +5,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import * as XLSX from 'xlsx';
 import type { MachineDetails } from '../api/machineApi';
 import { machineApi } from '../api/machineApi';
-import { workOrderApi } from '../api/workOrderApi';
+import { workOrderApi, type WorkOrderLog } from '../api/workOrderApi';
 import type { WorkOrder } from '../types/workOrder';
 import { LegalDocumentsCard } from '../components/LegalDocumentsCard';
 import { MachinePDFReport } from '../components/MachinePDFReport';
@@ -30,6 +30,20 @@ export function MachineHistoryPage() {
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [loadingWorkOrders, setLoadingWorkOrders] = useState(false);
   const [workshopSubTab, setWorkshopSubTab] = useState<'preventive' | 'corrective'>('preventive');
+  const [selectedWO, setSelectedWO] = useState<WorkOrder | null>(null);
+  const [woLogs, setWoLogs] = useState<WorkOrderLog[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+
+  const openBitacora = async (wo: WorkOrder) => {
+    setSelectedWO(wo);
+    setWoLogs([]);
+    setLoadingLogs(true);
+    try {
+      const logs = await workOrderApi.getLogs(wo.id);
+      setWoLogs(logs);
+    } catch { /* sin logs */ }
+    finally { setLoadingLogs(false); }
+  };
   
   // Estado para reset de vida útil
   const [showResetUsefulLifeModal, setShowResetUsefulLifeModal] = useState(false);
@@ -458,7 +472,7 @@ export function MachineHistoryPage() {
                                 </thead>
                                 <tbody>
                                   {activeList.map(wo => (
-                                    <tr key={wo.id}>
+                                    <tr key={wo.id} onClick={() => openBitacora(wo)} style={{ cursor: 'pointer' }} title="Ver bitácora">
                                       <td>{wo.type === 'PREVENTIVE' ? 'Preventivo' : wo.type === 'CORRECTIVE' ? 'Correctivo' : 'Predictivo'}</td>
                                       <td><span style={{ color: statusColor[wo.status] || '#6b7280', fontWeight: 600 }}>{statusLabel[wo.status] || wo.status}</span></td>
                                       <td>{formatDate(wo.entryDate)}</td>
@@ -662,6 +676,73 @@ export function MachineHistoryPage() {
               >
                 {updatingHourMeter ? 'Guardando...' : 'Guardar'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal bitácora de orden de trabajo */}
+      {selectedWO && (
+        <div className="modal-overlay" onClick={() => setSelectedWO(null)}>
+          <div className="modal-content" style={{ maxWidth: 680, maxHeight: '85vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>📋 Bitácora — {selectedWO.type === 'PREVENTIVE' ? 'Preventivo' : selectedWO.type === 'CORRECTIVE' ? 'Correctivo' : 'Predictivo'}</h3>
+              <button className="modal-close" onClick={() => setSelectedWO(null)}>×</button>
+            </div>
+            <div className="modal-body">
+              {/* Resumen de la OT */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16, padding: 12, background: '#f9fafb', borderRadius: 8 }}>
+                <div><span style={{ color: '#6b7280', fontSize: 12 }}>Ingreso</span><br /><strong>{formatDate(selectedWO.entryDate)}</strong></div>
+                <div><span style={{ color: '#6b7280', fontSize: 12 }}>Salida</span><br /><strong>{selectedWO.exitDate ? formatDate(selectedWO.exitDate) : '—'}</strong></div>
+                <div><span style={{ color: '#6b7280', fontSize: 12 }}>Días en taller</span><br /><strong>{Math.round((selectedWO.downtimeHours || 0) / 24)} días</strong></div>
+                <div><span style={{ color: '#6b7280', fontSize: 12 }}>Costo total</span><br /><strong>${selectedWO.totalCost.toLocaleString('es-CL')}</strong></div>
+              </div>
+
+              {/* Bitácora */}
+              <h4 style={{ margin: '0 0 12px', color: '#374151' }}>Registros</h4>
+              {loadingLogs ? (
+                <div style={{ textAlign: 'center', padding: 24, color: '#9ca3af' }}>Cargando bitácora...</div>
+              ) : woLogs.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: 24, color: '#9ca3af' }}>
+                  <span style={{ fontSize: 32 }}>📝</span>
+                  <p>Sin registros en la bitácora</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {woLogs.map(log => {
+                    const isImage = log.fileType?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(log.fileName || '');
+                    const isPDF = log.fileType === 'application/pdf' || /\.pdf$/i.test(log.fileName || '');
+                    return (
+                      <div key={log.id} style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 12 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                          <span style={{ fontSize: 12, color: '#6b7280' }}>{formatDate(log.date)}</span>
+                        </div>
+                        {log.description && (
+                          <p style={{ margin: '0 0 8px', fontSize: 14, color: '#111827', lineHeight: 1.5 }}>{log.description}</p>
+                        )}
+                        {log.fileUrl && (
+                          <div style={{ marginTop: 8 }}>
+                            {isImage ? (
+                              <a href={log.fileUrl} target="_blank" rel="noopener noreferrer">
+                                <img
+                                  src={log.fileUrl}
+                                  alt={log.fileName || 'adjunto'}
+                                  style={{ maxWidth: '100%', maxHeight: 280, borderRadius: 6, objectFit: 'contain', border: '1px solid #e5e7eb', cursor: 'zoom-in' }}
+                                />
+                              </a>
+                            ) : (
+                              <a href={log.fileUrl} target="_blank" rel="noopener noreferrer"
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#2563eb', fontSize: 13, textDecoration: 'none' }}>
+                                {isPDF ? '📄' : '📎'} {log.fileName || 'Ver adjunto'}
+                              </a>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
