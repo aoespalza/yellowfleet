@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { machineApi } from '../api/machineApi';
 import { operatorApi } from '../api/operatorApi';
+import { roleApi, type Role } from '../api/roleApi';
 import type { Machine, MachineFormData } from '../types/machine';
 import type { Operator } from '../types/operator';
 import { MACHINE_TYPES } from '../types/machine';
@@ -43,6 +44,7 @@ const initialFormData: MachineFormData = {
 
 export function FleetPage() {
   const { user } = useAuth();
+  const [permissions, setPermissions] = useState<Role | null>(null);
   const [machines, setMachines] = useState<Machine[]>([]);
   const [operators, setOperators] = useState<Operator[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,6 +83,13 @@ export function FleetPage() {
       ]);
       setMachines(machinesData);
       setOperators(operatorsData);
+      // Cargar permisos del rol del usuario actual
+      if (user?.role) {
+        try {
+          const role = await roleApi.get(user.role);
+          setPermissions(role);
+        } catch { /* ADMIN u otros roles sin entrada en tabla */ }
+      }
     } catch (error) {
       console.error('Error fetching machines:', error);
     } finally {
@@ -658,6 +667,7 @@ export function FleetPage() {
                           >
                             ✏️
                           </button>
+                          {(user?.role === 'ADMIN' || permissions?.canDeleteMachine) && (
                           <button
                             className="btn-delete"
                             onClick={() => handleDelete(machine.id)}
@@ -665,6 +675,7 @@ export function FleetPage() {
                           >
                             🗑️
                           </button>
+                          )}
                         </>
                       )}
                     </div>
