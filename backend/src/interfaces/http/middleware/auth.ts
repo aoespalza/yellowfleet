@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { PrismaClient } from '@prisma/client';
 import { rlsStorage } from '../../../infrastructure/prisma/prismaClient';
+
+const prisma = new PrismaClient();
 
 export interface AuthRequest extends Request {
   userId?: string;
@@ -40,5 +43,25 @@ export const authorizeRole = (...allowedRoles: string[]) => {
     }
 
     next();
+  };
+};
+
+// Verifica un permiso granular de la tabla Role.
+// ADMIN siempre tiene acceso; otros roles se consultan en DB.
+export const authorizePermission = (permissionField: string) => {
+  return async (req: AuthRequest, res: Response, next: NextFunction) => {
+    const userRole = req.userRole;
+    if (!userRole) {
+      res.status(403).json({ error: 'Insufficient permissions' });
+      return;
+    }
+    if (userRole === 'ADMIN') { next(); return; }
+    try {
+      const role = await prisma.role.findUnique({ where: { name: userRole } });
+      if (role && (role as any)[permissionField] === true) { next(); return; }
+      res.status(403).json({ error: 'No tienes permiso para realizar esta acción' });
+    } catch {
+      res.status(500).json({ error: 'Error verificando permisos' });
+    }
   };
 };

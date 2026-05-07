@@ -7,7 +7,7 @@ import { GetMachineById } from '../../../application/fleet/GetMachineById';
 import { ListMachines } from '../../../application/fleet/ListMachines';
 import { PrismaMachineRepository } from '../../../infrastructure/repositories/PrismaMachineRepository';
 import { PrismaOperatorRepository } from '../../../infrastructure/repositories/PrismaOperatorRepository';
-import { authenticateToken, authorizeRole } from '../middleware/auth';
+import { authenticateToken, authorizeRole, authorizePermission } from '../middleware/auth';
 
 
 const machineRepository = new PrismaMachineRepository();
@@ -43,12 +43,12 @@ router.get('/machines/:machineId/operator', authenticateToken, (req, res) => ope
 router.get('/machines/:machineId/operator-history', authenticateToken, (req, res) => operatorController.getMachineOperatorHistory(req, res));
 router.delete('/machines/:machineId/operator', authenticateToken, (req, res) => operatorController.unassignFromMachine(req, res));
 
-// Rutas protegidas (requieren autenticación y rol ADMIN o MANAGER)
-router.post('/machines', authenticateToken, authorizeRole('ADMIN', 'MANAGER'), (req, res) => fleetController.create(req, res));
-router.patch('/machines/:id/hourmeter', authenticateToken, authorizeRole('ADMIN', 'MANAGER'), (req, res) => fleetController.updateHourMeter(req, res));
-router.patch('/machines/:id/useful-life', authenticateToken, authorizeRole('ADMIN', 'MANAGER'), (req, res) => fleetController.resetUsefulLifeHours(req, res));
-router.patch('/machines/:id/status', authenticateToken, authorizeRole('ADMIN', 'MANAGER'), (req, res) => fleetController.changeStatus(req, res));
-router.put('/machines/:id', authenticateToken, authorizeRole('ADMIN', 'MANAGER'), (req, res) => fleetController.update(req, res));
-router.delete('/machines/:id', authenticateToken, authorizeRole('ADMIN', 'MANAGER'), (req, res) => fleetController.delete(req, res));
+// Rutas protegidas — verifican permisos granulares de la tabla Role
+router.post('/machines', authenticateToken, authorizePermission('canCreateMachine'), (req, res) => fleetController.create(req, res));
+router.patch('/machines/:id/hourmeter', authenticateToken, authorizePermission('canUpdateHourMeter'), (req, res) => fleetController.updateHourMeter(req, res));
+router.patch('/machines/:id/useful-life', authenticateToken, authorizeRole('ADMIN'), (req, res) => fleetController.resetUsefulLifeHours(req, res));
+router.patch('/machines/:id/status', authenticateToken, authorizePermission('canEditMachine'), (req, res) => fleetController.changeStatus(req, res));
+router.put('/machines/:id', authenticateToken, authorizePermission('canEditMachine'), (req, res) => fleetController.update(req, res));
+router.delete('/machines/:id', authenticateToken, authorizePermission('canDeleteMachine'), (req, res) => fleetController.delete(req, res));
  
 export default router;
