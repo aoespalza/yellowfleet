@@ -364,6 +364,56 @@ export function WorkshopPage() {
     }
   };
 
+  const printWorkOrder = async () => {
+    if (!selectedOrder) return;
+    const machine = machines.find(m => m.id === selectedOrder.machineId);
+    let logs: any[] = [];
+    try { logs = await workOrderApi.getLogs(selectedOrder.id); } catch { /* sin logs */ }
+
+    const logRows = logs.map(log => `
+      <tr>
+        <td style="padding:8px;border:1px solid #ccc;vertical-align:top;white-space:nowrap">${new Date(log.date).toLocaleString('es-CL')}</td>
+        <td style="padding:8px;border:1px solid #ccc">${log.description || '—'}</td>
+        <td style="padding:8px;border:1px solid #ccc;white-space:nowrap">${log.fileName ? `📎 ${log.fileName}` : '—'}</td>
+      </tr>`).join('');
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+      <title>OT #${selectedOrder.id.slice(0,8)} — ${machine?.code || selectedOrder.machineId}</title>
+      <style>
+        body { font-family: Arial, sans-serif; font-size: 13px; color: #111; margin: 24px; }
+        h2 { margin: 0 0 4px; } .subtitle { color: #555; margin: 0 0 16px; font-size: 12px; }
+        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: #f5f5f5; padding: 12px; border-radius: 6px; margin-bottom: 20px; }
+        .item label { font-size: 11px; color: #888; display: block; margin-bottom: 2px; } .item strong { font-size: 13px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        th { padding: 8px; border: 1px solid #ccc; background: #f5f5f5; text-align: left; font-size: 12px; }
+        h3 { margin: 20px 0 8px; font-size: 14px; }
+        .footer { margin-top: 24px; font-size: 11px; color: #aaa; }
+        @media print { body { margin: 12px; } }
+      </style></head><body>
+      <h2>Orden de Trabajo — ${getTypeLabel(selectedOrder.type)}</h2>
+      <p class="subtitle">ID: #${selectedOrder.id.slice(0,8)} &nbsp;|&nbsp; Estado: ${getStatusLabel(selectedOrder.status)}</p>
+      <div class="grid">
+        <div class="item"><label>Máquina</label><strong>${machine ? `${machine.code} — ${machine.brand} ${machine.model}` : selectedOrder.machineId}</strong></div>
+        <div class="item"><label>Fecha Ingreso</label><strong>${new Date(selectedOrder.entryDate).toLocaleDateString('es-CL')}</strong></div>
+        <div class="item"><label>Fecha Salida</label><strong>${selectedOrder.exitDate ? new Date(selectedOrder.exitDate).toLocaleDateString('es-CL') : '—'}</strong></div>
+        <div class="item"><label>Días Inactividad</label><strong>${Math.round((selectedOrder.downtimeHours || 0) / 24)} días</strong></div>
+        <div class="item"><label>Repuestos</label><strong>$${(selectedOrder.sparePartsCost || 0).toLocaleString('es-CL')}</strong></div>
+        <div class="item"><label>Mano de Obra</label><strong>$${(selectedOrder.laborCost || 0).toLocaleString('es-CL')}</strong></div>
+        <div class="item"><label>Costo Total</label><strong>$${((selectedOrder.sparePartsCost || 0) + (selectedOrder.laborCost || 0)).toLocaleString('es-CL')}</strong></div>
+      </div>
+      <h3>Bitácora de Trabajo</h3>
+      <table>
+        <thead><tr><th style="width:140px">Fecha</th><th>Descripción</th><th style="width:160px">Adjunto</th></tr></thead>
+        <tbody>${logRows || '<tr><td colspan="3" style="padding:8px;border:1px solid #ccc;color:#888">Sin registros</td></tr>'}</tbody>
+      </table>
+      <p class="footer">Impreso el ${new Date().toLocaleString('es-CL')} — YellowFleet</p>
+      <script>window.onload = () => { window.print(); }<\/script>
+      </body></html>`;
+
+    const w = window.open('', '_blank', 'width=900,height=700');
+    if (w) { w.document.write(html); w.document.close(); }
+  };
+
   const getTypeLabel = (type: string) => {
     switch (type) {
       case 'PREVENTIVE': return 'Preventivo';
@@ -505,6 +555,10 @@ export function WorkshopPage() {
                       <span className="order-id">#{selectedOrder.id.slice(0, 8)}</span>
                     </div>
                     <div className="order-actions">
+                      <button onClick={printWorkOrder}
+                        style={{ background: '#f3f4f6', border: '1px solid #d1d5db', color: '#374151', padding: '4px 12px', borderRadius: 6, fontSize: 13, cursor: 'pointer' }}>
+                        🖨️ Imprimir
+                      </button>
                       {user?.role !== 'OPERATOR' && (
                         <>
                           <button 
