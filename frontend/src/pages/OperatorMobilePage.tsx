@@ -63,15 +63,53 @@ export function OperatorMobilePage({ onNavigate }: { onNavigate?: (page: string)
     rafRef.current = requestAnimationFrame(scanFrame);
   }, [stopScanner]);
 
+  // Fallback HTTP: input file con capture — funciona en mobile aunque no haya HTTPS
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileCapture = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = canvasRef.current!;
+        canvas.width = img.width;
+        canvas.height = img.height;
+        canvas.getContext('2d')!.drawImage(img, 0, 0);
+        const imageData = canvas.getContext('2d')!.getImageData(0, 0, img.width, img.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        if (code?.data) {
+          try {
+            const url = new URL(code.data);
+            const id = url.searchParams.get('maquina');
+            if (id) { window.location.href = `${window.location.pathname}?maquina=${id}`; return; }
+          } catch { /* no es URL de YellowFleet */ }
+        }
+        setScanError('No se detectó un QR válido. Intenta de nuevo con mejor iluminación.');
+        // limpiar input para permitir reintentar
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
+  const isSecureContext = typeof window !== 'undefined' && window.isSecureContext;
+
   const startScanner = useCallback(async () => {
     setScanError(null);
+    // En HTTP (VPS sin SSL) usar el input file con capture
+    if (!isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      fileInputRef.current?.click();
+      return;
+    }
     setScannerOpen(true);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
       });
       streamRef.current = stream;
-      // Dar tiempo a que el modal monte el video
       setTimeout(() => {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -80,10 +118,10 @@ export function OperatorMobilePage({ onNavigate }: { onNavigate?: (page: string)
         }
       }, 100);
     } catch {
-      setScanError('No se pudo acceder a la cámara. Verifica los permisos en tu navegador.');
+      setScanError('No se pudo acceder a la cámara. Verifica los permisos.');
       setScannerOpen(false);
     }
-  }, [scanFrame]);
+  }, [scanFrame, isSecureContext]);
 
   // Limpiar stream al desmontar
   useEffect(() => () => { stopScanner(); }, [stopScanner]);
@@ -352,6 +390,24 @@ export function OperatorMobilePage({ onNavigate }: { onNavigate?: (page: string)
           </>
         )}
       </div>
+      {/* Input oculto para fallback HTTP (capture sin getUserMedia) */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        style={{ display: 'none' }}
+        onChange={handleFileCapture}
+      />
+
+      {/* Mensaje de error fallback (fuera del modal) */}
+      {!scannerOpen && scanError && (
+        <div style={{ position: 'fixed', bottom: 24, left: 16, right: 16, background: '#7f1d1d', color: '#fca5a5', padding: '12px 16px', borderRadius: 10, fontSize: 14, textAlign: 'center', zIndex: 999 }}>
+          {scanError}
+          <button onClick={() => setScanError(null)} style={{ marginLeft: 12, background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer', fontSize: 16 }}>✕</button>
+        </div>
+      )}
+
       {/* Modal scanner QR */}
       {scannerOpen && (
         <div style={{ position: 'fixed', inset: 0, background: '#000', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
