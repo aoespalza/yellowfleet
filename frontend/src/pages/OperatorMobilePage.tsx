@@ -66,42 +66,50 @@ export function OperatorMobilePage({ onNavigate }: { onNavigate?: (page: string)
   // Fallback HTTP: input file con capture — funciona en mobile aunque no haya HTTPS
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileCapture = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const navigateToMachine = useCallback((qrData: string) => {
+    try {
+      const url = new URL(qrData);
+      const id = url.searchParams.get('maquina');
+      if (id) { window.location.href = `${window.location.pathname}?maquina=${id}`; return true; }
+    } catch { /* no es URL de YellowFleet */ }
+    return false;
+  }, []);
+
+  const handleFileCapture = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = canvasRef.current!;
-        const ctx = canvas.getContext('2d')!;
 
-        // Intentar con varias escalas — fotos del móvil son enormes,
-        // jsQR las pierde si el QR ocupa poco porcentaje de la imagen.
-        const scales = [1024, 640, 1600];
-        for (const maxSide of scales) {
-          const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
-          canvas.width  = Math.round(img.width  * scale);
-          canvas.height = Math.round(img.height * scale);
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const code = jsQR(imageData.data, imageData.width, imageData.height);
-          if (code?.data) {
-            try {
-              const url = new URL(code.data);
-              const id = url.searchParams.get('maquina');
-              if (id) { window.location.href = `${window.location.pathname}?maquina=${id}`; return; }
-            } catch { /* QR válido pero no es de YellowFleet */ }
-          }
-        }
+    // 1. Intentar con BarcodeDetector nativo (Chrome Android) — maneja EXIF automáticamente
+    if ('BarcodeDetector' in window) {
+      try {
+        const detector = new (window as any).BarcodeDetector({ formats: ['qr_code'] });
+        const barcodes = await detector.detect(file);
+        if (barcodes.length > 0 && navigateToMachine(barcodes[0].rawValue)) return;
+      } catch { /* fallback a jsQR */ }
+    }
 
-        setScanError('No se detectó un QR válido. Acércate más al código e intenta de nuevo.');
-        if (fileInputRef.current) fileInputRef.current.value = '';
-      };
-      img.src = reader.result as string;
+    // 2. Fallback jsQR — múltiples escalas + inversionAttempts para mejorar detección
+    const blobUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(blobUrl);
+      const canvas = canvasRef.current!;
+      const ctx = canvas.getContext('2d')!;
+      // Probar varias resoluciones: la cámara del móvil genera fotos enormes
+      for (const maxSide of [800, 1200, 1600, 400]) {
+        const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+        canvas.width  = Math.round(img.width  * scale);
+        canvas.height = Math.round(img.height * scale);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'attemptBoth' });
+        if (code?.data && navigateToMachine(code.data)) return;
+      }
+      setScanError('No se detectó un QR válido. Acércate más y asegúrate de que el código esté bien iluminado.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
     };
-    reader.readAsDataURL(file);
-  }, []);
+    img.src = blobUrl;
+  }, [navigateToMachine]);
 
   const isSecureContext = typeof window !== 'undefined' && window.isSecureContext;
 
