@@ -44,6 +44,46 @@ export function MachineHistoryPage() {
     } catch { /* sin logs */ }
     finally { setLoadingLogs(false); }
   };
+
+  const printBitacora = () => {
+    if (!selectedWO || !details) return;
+    const typeLabel = selectedWO.type === 'PREVENTIVE' ? 'Preventivo' : selectedWO.type === 'CORRECTIVE' ? 'Correctivo' : 'Predictivo';
+    const rows = woLogs.map(log => `
+      <tr>
+        <td style="padding:8px;border:1px solid #ccc;vertical-align:top;white-space:nowrap">${formatDate(log.date)}</td>
+        <td style="padding:8px;border:1px solid #ccc">${log.description || '—'}</td>
+      </tr>`).join('');
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+      <title>Bitácora ${details.code} — ${typeLabel}</title>
+      <style>
+        body { font-family: Arial, sans-serif; font-size: 13px; color: #111; margin: 24px; }
+        h2 { margin: 0 0 4px; } p { margin: 2px 0; color: #555; }
+        .info { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; margin: 16px 0; padding: 12px; background: #f5f5f5; border-radius: 6px; }
+        .info-item label { font-size: 11px; color: #888; display: block; } .info-item strong { font-size: 13px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th { padding: 8px; border: 1px solid #ccc; background: #f5f5f5; text-align: left; font-size: 12px; }
+        @media print { body { margin: 12px; } }
+      </style></head><body>
+      <h2>Bitácora de Orden de Trabajo — ${typeLabel}</h2>
+      <p>${details.brand} ${details.model} | Código: <strong>${details.code}</strong></p>
+      <div class="info">
+        <div class="info-item"><label>Ingreso</label><strong>${formatDate(selectedWO.entryDate)}</strong></div>
+        <div class="info-item"><label>Salida</label><strong>${selectedWO.exitDate ? formatDate(selectedWO.exitDate) : '—'}</strong></div>
+        <div class="info-item"><label>Días en taller</label><strong>${Math.round((selectedWO.downtimeHours || 0) / 24)} días</strong></div>
+        <div class="info-item"><label>Costo total</label><strong>$${selectedWO.totalCost.toLocaleString('es-CL')}</strong></div>
+      </div>
+      <table>
+        <thead><tr><th style="width:130px">Fecha</th><th>Descripción</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="2" style="padding:8px;border:1px solid #ccc;color:#888">Sin registros</td></tr>'}</tbody>
+      </table>
+      <p style="margin-top:20px;font-size:11px;color:#aaa">Impreso el ${new Date().toLocaleString('es-CL')} — YellowFleet</p>
+      <script>window.onload = () => { window.print(); }<\/script>
+      </body></html>`;
+
+    const w = window.open('', '_blank', 'width=800,height=600');
+    if (w) { w.document.write(html); w.document.close(); }
+  };
   
   // Estado para reset de vida útil
   const [showResetUsefulLifeModal, setShowResetUsefulLifeModal] = useState(false);
@@ -687,7 +727,13 @@ export function MachineHistoryPage() {
           <div className="modal-content" style={{ maxWidth: 680, maxHeight: '85vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3>📋 Bitácora — {selectedWO.type === 'PREVENTIVE' ? 'Preventivo' : selectedWO.type === 'CORRECTIVE' ? 'Correctivo' : 'Predictivo'}</h3>
-              <button className="modal-close" onClick={() => setSelectedWO(null)}>×</button>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <button onClick={printBitacora} disabled={loadingLogs}
+                  style={{ background: '#f3f4f6', border: '1px solid #d1d5db', color: '#374151', padding: '4px 12px', borderRadius: 6, fontSize: 13, cursor: 'pointer' }}>
+                  🖨️ Imprimir
+                </button>
+                <button className="modal-close" onClick={() => setSelectedWO(null)}>×</button>
+              </div>
             </div>
             <div className="modal-body">
               {/* Resumen de la OT */}
