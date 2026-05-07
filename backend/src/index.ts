@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
 import cron from 'node-cron';
 import { connectDatabase } from './infrastructure/database/prisma';
 import { notificationService } from './infrastructure/notification/notificationService';
@@ -61,15 +62,15 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// Serve frontend static files in production
+// Serve frontend static files in production (solo si el build existe en este contenedor)
 if (process.env.NODE_ENV === 'production') {
   const frontendPath = path.join(__dirname, '../../frontend/dist');
-  app.use(express.static(frontendPath));
-
-  // Handle SPA routing - serve index.html for unknown routes
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(frontendPath, 'index.html'));
-  });
+  if (fs.existsSync(frontendPath)) {
+    app.use(express.static(frontendPath));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(frontendPath, 'index.html'));
+    });
+  }
 }
 
 async function start() {
@@ -81,10 +82,9 @@ async function start() {
     try {
       const result = await notificationService.runAllChecks();
       console.log('[CRON] Resultado de notificaciones:', {
-        contracts: result.contracts.sent,
-        leasing: result.leasing.sent,
-        documents: result.documents.sent,
-        workOrders: result.workOrders.sent
+        emailsEnviados: result.summary.sent,
+        alertas: result.summary.counts,
+        errores: result.summary.errors
       });
     } catch (error) {
       console.error('[CRON] Error en notificaciones automáticas:', error);
