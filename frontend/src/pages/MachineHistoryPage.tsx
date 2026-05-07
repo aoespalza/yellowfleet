@@ -45,9 +45,14 @@ export function MachineHistoryPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (id) {
-      fetchDetails(id);
+    if (!id) return;
+    // Si se accede desde un QR (sin referrer interno), redirigir a vista operador
+    const isInternalNav = document.referrer && document.referrer.startsWith(window.location.origin);
+    if (!isInternalNav) {
+      navigate(`/operador?maquina=${id}`, { replace: true });
+      return;
     }
+    fetchDetails(id);
   }, [id]);
 
   // Cargar historial de horómetro cuando se selecciona el tab
@@ -560,14 +565,9 @@ export function MachineHistoryPage() {
                 {details.imageUrl ? <img src={details.imageUrl} alt={details.code} /> : <div className="hero-image-placeholder"><span>🚜</span></div>}
               </div>
               <div className="hero-qr">
-                <QRCodeSVG value={`${window.location.origin}/fleet/${details.id}/history`} size={140} level="M" includeMargin={false} />
-                <span className="qr-label">Escanea para consultar</span>
+                <QRCodeSVG value={`${window.location.origin}/operador?maquina=${details.id}`} size={140} level="M" includeMargin={false} />
+                <span className="qr-label">Escanea para operar</span>
               </div>
-              <a
-                href={`/operador?maquina=${details.id}`}
-                style={{ display: 'block', marginTop: 10, background: '#f59e0b', color: '#111827', padding: '10px 0', borderRadius: 8, fontWeight: 700, fontSize: 14, textAlign: 'center', textDecoration: 'none' }}>
-                📱 Vista Operador
-              </a>
             </div>
             <div className="sidebar-section">
               <h3>📊 Estadísticas Rápidas</h3>
