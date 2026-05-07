@@ -74,20 +74,28 @@ export function OperatorMobilePage({ onNavigate }: { onNavigate?: (page: string)
       const img = new Image();
       img.onload = () => {
         const canvas = canvasRef.current!;
-        canvas.width = img.width;
-        canvas.height = img.height;
-        canvas.getContext('2d')!.drawImage(img, 0, 0);
-        const imageData = canvas.getContext('2d')!.getImageData(0, 0, img.width, img.height);
-        const code = jsQR(imageData.data, imageData.width, imageData.height);
-        if (code?.data) {
-          try {
-            const url = new URL(code.data);
-            const id = url.searchParams.get('maquina');
-            if (id) { window.location.href = `${window.location.pathname}?maquina=${id}`; return; }
-          } catch { /* no es URL de YellowFleet */ }
+        const ctx = canvas.getContext('2d')!;
+
+        // Intentar con varias escalas — fotos del móvil son enormes,
+        // jsQR las pierde si el QR ocupa poco porcentaje de la imagen.
+        const scales = [1024, 640, 1600];
+        for (const maxSide of scales) {
+          const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+          canvas.width  = Math.round(img.width  * scale);
+          canvas.height = Math.round(img.height * scale);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const code = jsQR(imageData.data, imageData.width, imageData.height);
+          if (code?.data) {
+            try {
+              const url = new URL(code.data);
+              const id = url.searchParams.get('maquina');
+              if (id) { window.location.href = `${window.location.pathname}?maquina=${id}`; return; }
+            } catch { /* QR válido pero no es de YellowFleet */ }
+          }
         }
-        setScanError('No se detectó un QR válido. Intenta de nuevo con mejor iluminación.');
-        // limpiar input para permitir reintentar
+
+        setScanError('No se detectó un QR válido. Acércate más al código e intenta de nuevo.');
         if (fileInputRef.current) fileInputRef.current.value = '';
       };
       img.src = reader.result as string;
