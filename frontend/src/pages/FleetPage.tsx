@@ -611,7 +611,7 @@ export function FleetPage() {
               {filteredMachines.map((machine) => (
                 <tr key={machine.id}>
                   <td>
-                    <Link to={`/fleet/${machine.id}/history`} className="machine-code-link">
+                    <Link to={`/fleet/${machine.id}/history`} state={{ fromApp: true }} className="machine-code-link">
                       {machine.code}
                     </Link>
                   </td>

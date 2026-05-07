@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import * as XLSX from 'xlsx';
 import type { MachineDetails } from '../api/machineApi';
@@ -13,6 +13,7 @@ import './MachineHistoryPage.css';
 
 export function MachineHistoryPage() {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
   const [details, setDetails] = useState<MachineDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'summary' | 'contracts' | 'workshop' | 'hourmeter'>('summary');
@@ -94,9 +95,9 @@ export function MachineHistoryPage() {
 
   useEffect(() => {
     if (!id) return;
-    // Si se accede desde un QR (sin referrer interno), redirigir a vista operador
-    const isInternalNav = document.referrer && document.referrer.startsWith(window.location.origin);
-    if (!isInternalNav) {
+    // Solo mostrar la hoja de vida si se navega desde dentro de la app (state.fromApp).
+    // Acceso directo (QR scan, URL en barra del browser) redirige a vista operador.
+    if (!(location.state as any)?.fromApp) {
       navigate(`/operador?maquina=${id}`, { replace: true });
       return;
     }
