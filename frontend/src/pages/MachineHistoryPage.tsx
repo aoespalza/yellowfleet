@@ -5,7 +5,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import * as XLSX from 'xlsx';
 import type { MachineDetails } from '../api/machineApi';
 import { machineApi } from '../api/machineApi';
-import { workOrderApi, type WorkOrderLog } from '../api/workOrderApi';
+import { workOrderApi } from '../api/workOrderApi';
 import type { WorkOrder } from '../types/workOrder';
 import { LegalDocumentsCard } from '../components/LegalDocumentsCard';
 import { MachinePDFReport } from '../components/MachinePDFReport';
@@ -29,13 +29,7 @@ export function MachineHistoryPage() {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [loadingWorkOrders, setLoadingWorkOrders] = useState(false);
-  const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrder | null>(null);
-  const [workOrderLogs, setWorkOrderLogs] = useState<WorkOrderLog[]>([]);
-  const [loadingLogs, setLoadingLogs] = useState(false);
-  const [showLogModal, setShowLogModal] = useState(false);
-  const [newLogDescription, setNewLogDescription] = useState('');
-  const [logFile, setLogFile] = useState<File | null>(null);
-  const [uploadingLog, setUploadingLog] = useState(false);
+  const [workshopSubTab, setWorkshopSubTab] = useState<'preventive' | 'corrective'>('preventive');
   
   // Estado para reset de vida útil
   const [showResetUsefulLifeModal, setShowResetUsefulLifeModal] = useState(false);
@@ -69,59 +63,15 @@ export function MachineHistoryPage() {
     }
   }, [activeTab, id]);
 
-  // Cargar logs cuando se selecciona una orden de trabajo
-  useEffect(() => {
-    if (selectedWorkOrder) {
-      loadWorkOrderLogs(selectedWorkOrder.id);
-    }
-  }, [selectedWorkOrder]);
-
   const loadWorkOrders = async (machineId: string) => {
     setLoadingWorkOrders(true);
     try {
       const orders = await workOrderApi.getAll();
-      const machineOrders = orders.filter(wo => wo.machineId === machineId);
-      setWorkOrders(machineOrders);
-      if (machineOrders.length > 0) {
-        setSelectedWorkOrder(machineOrders[0]);
-      }
+      setWorkOrders(orders.filter(wo => wo.machineId === machineId));
     } catch (error) {
       console.error('Error loading work orders:', error);
     } finally {
       setLoadingWorkOrders(false);
-    }
-  };
-
-  const loadWorkOrderLogs = async (workOrderId: string) => {
-    setLoadingLogs(true);
-    try {
-      const logs = await workOrderApi.getLogs(workOrderId);
-      setWorkOrderLogs(logs);
-    } catch (error) {
-      console.error('Error loading logs:', error);
-    } finally {
-      setLoadingLogs(false);
-    }
-  };
-
-  const handleAddLog = async () => {
-    if (!selectedWorkOrder || (!newLogDescription && !logFile)) return;
-    
-    setUploadingLog(true);
-    try {
-      if (logFile) {
-        await workOrderApi.uploadLogWithFile(selectedWorkOrder.id, newLogDescription, logFile);
-      } else {
-        await workOrderApi.addLog(selectedWorkOrder.id, newLogDescription);
-      }
-      setNewLogDescription('');
-      setLogFile(null);
-      setShowLogModal(false);
-      loadWorkOrderLogs(selectedWorkOrder.id);
-    } catch (error) {
-      console.error('Error adding log:', error);
-    } finally {
-      setUploadingLog(false);
     }
   };
 
@@ -427,88 +377,117 @@ export function MachineHistoryPage() {
                 </div>
               )}
 
-              {activeTab === 'workshop' && (
-                <div className="workorders-tab">
-                  {loadingWorkOrders ? (
-                    <div className="loading-state">Cargando órdenes de trabajo...</div>
-                  ) : workOrders.length === 0 ? (
-                    <div className="empty-state">
-                      <span>🔧</span>
-                      <p>No hay órdenes de trabajo registradas</p>
-                    </div>
-                  ) : (
-                    <div className="workorders-with-logs">
-                      {/* Selector de orden de trabajo */}
-                      <div className="workorder-selector">
-                        <label>Seleccionar Orden de Trabajo:</label>
-                        <select 
-                          value={selectedWorkOrder?.id || ''} 
-                          onChange={(e) => {
-                            const wo = workOrders.find(w => w.id === e.target.value);
-                            setSelectedWorkOrder(wo || null);
-                          }}
-                        >
-                          {workOrders.map((wo) => (
-                            <option key={wo.id} value={wo.id}>
-                              {wo.type} - {formatDate(wo.entryDate)} ({wo.status})
-                            </option>
-                          ))}
-                        </select>
-                        <button className="btn-add-log" onClick={() => setShowLogModal(true)}>
-                          ➕ Agregar Bitácora
-                        </button>
-                      </div>
+              {activeTab === 'workshop' && (() => {
+                const preventive = workOrders.filter(wo => wo.type === 'PREVENTIVE');
+                const corrective = workOrders.filter(wo => wo.type !== 'PREVENTIVE');
+                const activeList = workshopSubTab === 'preventive' ? preventive : corrective;
 
-                      {/* Bitácora */}
-                      <div className="binnacle-section">
-                        <h3>📋 Bitácora de Trabajo</h3>
-                        {loadingLogs ? (
-                          <div className="loading-state">Cargando bitácora...</div>
-                        ) : workOrderLogs.length === 0 ? (
+                const exportWorkshopExcel = () => {
+                  const rows = activeList.map(wo => ({
+                    'Tipo': wo.type === 'PREVENTIVE' ? 'Preventivo' : wo.type === 'CORRECTIVE' ? 'Correctivo' : 'Predictivo',
+                    'Estado': wo.status,
+                    'Fecha Ingreso': formatDate(wo.entryDate),
+                    'Fecha Salida': wo.exitDate ? formatDate(wo.exitDate) : '-',
+                    'Costo Repuestos': wo.sparePartsCost,
+                    'Costo Mano de Obra': wo.laborCost,
+                    'Costo Total': wo.totalCost,
+                    'Horas Parada': wo.downtimeHours,
+                  }));
+                  import('xlsx').then(XLSX => {
+                    const ws = XLSX.utils.json_to_sheet(rows);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, workshopSubTab === 'preventive' ? 'Preventivo' : 'Correctivo');
+                    XLSX.writeFile(wb, `taller_${workshopSubTab}_${details?.code}.xlsx`);
+                  });
+                };
+
+                const statusLabel: Record<string, string> = {
+                  OPEN: 'Abierta', IN_PROGRESS: 'En progreso',
+                  WAITING_PARTS: 'Esperando repuestos', COMPLETED: 'Completada', CANCELLED: 'Cancelada'
+                };
+                const statusColor: Record<string, string> = {
+                  OPEN: '#3b82f6', IN_PROGRESS: '#f59e0b',
+                  WAITING_PARTS: '#8b5cf6', COMPLETED: '#10b981', CANCELLED: '#6b7280'
+                };
+
+                return (
+                  <div className="workorders-tab">
+                    {loadingWorkOrders ? (
+                      <div className="loading-state">Cargando historial de taller...</div>
+                    ) : (
+                      <>
+                        {/* Sub-tabs */}
+                        <div style={{ display: 'flex', gap: 8, marginBottom: 16, borderBottom: '1px solid #e5e7eb', paddingBottom: 0 }}>
+                          <button
+                            onClick={() => setWorkshopSubTab('preventive')}
+                            style={{ padding: '8px 20px', border: 'none', borderBottom: workshopSubTab === 'preventive' ? '2px solid #f59e0b' : '2px solid transparent', background: 'none', fontWeight: workshopSubTab === 'preventive' ? 700 : 400, color: workshopSubTab === 'preventive' ? '#f59e0b' : '#6b7280', cursor: 'pointer', fontSize: 14 }}>
+                            🔩 Preventivo ({preventive.length})
+                          </button>
+                          <button
+                            onClick={() => setWorkshopSubTab('corrective')}
+                            style={{ padding: '8px 20px', border: 'none', borderBottom: workshopSubTab === 'corrective' ? '2px solid #f59e0b' : '2px solid transparent', background: 'none', fontWeight: workshopSubTab === 'corrective' ? 700 : 400, color: workshopSubTab === 'corrective' ? '#f59e0b' : '#6b7280', cursor: 'pointer', fontSize: 14 }}>
+                            🚨 Correctivo / Predictivo ({corrective.length})
+                          </button>
+                        </div>
+
+                        {activeList.length === 0 ? (
                           <div className="empty-state">
-                            <span>📝</span>
-                            <p>No hay registros en la bitácora</p>
+                            <span>🔧</span>
+                            <p>No hay órdenes {workshopSubTab === 'preventive' ? 'preventivas' : 'correctivas'} registradas</p>
                           </div>
                         ) : (
-                          <div className="binnacle-table-wrapper">
-                            <table className="binnacle-table">
-                              <thead>
-                                <tr>
-                                  <th>Fecha</th>
-                                  <th>Descripción</th>
-                                  <th>Archivo</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {workOrderLogs.map((log) => (
-                                  <tr key={log.id}>
-                                    <td>{formatDate(log.date)}</td>
-                                    <td>{log.description || '-'}</td>
-                                    <td>
-                                      {log.fileUrl ? (
-                                        <a 
-                                          href={log.fileUrl} 
-                                          target="_blank" 
-                                          rel="noopener noreferrer"
-                                          className="file-link"
-                                        >
-                                          📎 {log.fileName}
-                                        </a>
-                                      ) : (
-                                        <span className="no-file">-</span>
-                                      )}
-                                    </td>
+                          <>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+                              <button className="btn-export-excel" onClick={exportWorkshopExcel}>
+                                📥 Exportar Excel
+                              </button>
+                            </div>
+                            <div className="hourmeter-table-wrapper">
+                              <table className="hourmeter-table">
+                                <thead>
+                                  <tr>
+                                    <th>Tipo</th>
+                                    <th>Estado</th>
+                                    <th>Ingreso</th>
+                                    <th>Salida</th>
+                                    <th style={{ textAlign: 'right' }}>Repuestos</th>
+                                    <th style={{ textAlign: 'right' }}>M. de Obra</th>
+                                    <th style={{ textAlign: 'right' }}>Total</th>
+                                    <th style={{ textAlign: 'right' }}>Hrs Parada</th>
                                   </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
+                                </thead>
+                                <tbody>
+                                  {activeList.map(wo => (
+                                    <tr key={wo.id}>
+                                      <td>{wo.type === 'PREVENTIVE' ? 'Preventivo' : wo.type === 'CORRECTIVE' ? 'Correctivo' : 'Predictivo'}</td>
+                                      <td><span style={{ color: statusColor[wo.status] || '#6b7280', fontWeight: 600 }}>{statusLabel[wo.status] || wo.status}</span></td>
+                                      <td>{formatDate(wo.entryDate)}</td>
+                                      <td>{wo.exitDate ? formatDate(wo.exitDate) : '—'}</td>
+                                      <td style={{ textAlign: 'right' }}>${wo.sparePartsCost.toLocaleString('es-CL')}</td>
+                                      <td style={{ textAlign: 'right' }}>${wo.laborCost.toLocaleString('es-CL')}</td>
+                                      <td style={{ textAlign: 'right', fontWeight: 600 }}>${wo.totalCost.toLocaleString('es-CL')}</td>
+                                      <td style={{ textAlign: 'right' }}>{wo.downtimeHours} h</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                                <tfoot>
+                                  <tr style={{ fontWeight: 700, borderTop: '2px solid #e5e7eb' }}>
+                                    <td colSpan={4}>Total ({activeList.length} OT)</td>
+                                    <td style={{ textAlign: 'right' }}>${activeList.reduce((s, w) => s + w.sparePartsCost, 0).toLocaleString('es-CL')}</td>
+                                    <td style={{ textAlign: 'right' }}>${activeList.reduce((s, w) => s + w.laborCost, 0).toLocaleString('es-CL')}</td>
+                                    <td style={{ textAlign: 'right' }}>${activeList.reduce((s, w) => s + w.totalCost, 0).toLocaleString('es-CL')}</td>
+                                    <td style={{ textAlign: 'right' }}>{activeList.reduce((s, w) => s + w.downtimeHours, 0)} h</td>
+                                  </tr>
+                                </tfoot>
+                              </table>
+                            </div>
+                          </>
                         )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Tab Historial de Horómetro */}
               {activeTab === 'hourmeter' && (
@@ -682,55 +661,6 @@ export function MachineHistoryPage() {
                 disabled={updatingHourMeter || !newHourMeter || parseFloat(newHourMeter) < (details.hourMeter || 0)}
               >
                 {updatingHourMeter ? 'Guardando...' : 'Guardar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal para agregar bitácora */}
-      {showLogModal && (
-        <div className="modal-overlay" onClick={() => setShowLogModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>📝 Agregar Registro a Bitácora</h3>
-              <button className="modal-close" onClick={() => setShowLogModal(false)}>×</button>
-            </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label>Descripción del trabajo realizado:</label>
-                <textarea 
-                  value={newLogDescription}
-                  onChange={(e) => setNewLogDescription(e.target.value)}
-                  placeholder="Describe el trabajo realizado,repuestos utilizados, observaciones..."
-                  rows={4}
-                />
-              </div>
-              <div className="form-group">
-                <label>Archivo (factura, foto, etc.):</label>
-                <input 
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png,.gif,.webp"
-                  onChange={(e) => setLogFile(e.target.files?.[0] || null)}
-                />
-                {logFile && (
-                  <div className="selected-file">
-                    📎 {logFile.name}
-                    <button type="button" onClick={() => setLogFile(null)}>×</button>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn-cancel" onClick={() => setShowLogModal(false)} disabled={uploadingLog}>
-                Cancelar
-              </button>
-              <button 
-                className="btn-save" 
-                onClick={handleAddLog} 
-                disabled={uploadingLog || (!newLogDescription && !logFile)}
-              >
-                {uploadingLog ? 'Guardando...' : 'Guardar'}
               </button>
             </div>
           </div>
