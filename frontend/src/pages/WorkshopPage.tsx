@@ -596,6 +596,16 @@ export function WorkshopPage() {
                   <p>Selecciona una orden de trabajo para ver los detalles</p>
                 </div>
               )}
+
+              {/* Bitácora debajo del detalle de la orden */}
+              {selectedOrder && !showForm && (
+                <div className="workshop-logs">
+                  <WorkOrderLogs
+                    workOrderId={selectedOrder.id}
+                    onClose={() => {}}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Panel derecho: Órdenes activas (25%) */}
@@ -693,16 +703,6 @@ export function WorkshopPage() {
               </div>
             </div>
           </div>
-
-          {/* Bitácora debajo (100%) */}
-          {selectedOrder && (
-            <div className="workshop-logs">
-              <WorkOrderLogs
-                workOrderId={selectedOrder.id}
-                onClose={() => {}}
-              />
-            </div>
-          )}
 
           {/* Modal para cerrar orden */}
           {showCloseModal && (
