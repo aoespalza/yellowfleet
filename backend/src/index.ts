@@ -58,8 +58,19 @@ app.use('/api/jobs', JobRoutes);
 
 // Global error handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (err instanceof SyntaxError && 'body' in err) {
+    return res.status(400).json({ error: 'JSON inválido en el cuerpo de la solicitud' });
+  }
   console.error(err.stack);
-  res.status(500).json({ error: 'Internal server error' });
+  res.status(err.status || 500).json({ error: err.message || 'Internal server error' });
+});
+
+// Evitar crash por excepciones no capturadas
+process.on('uncaughtException', (err) => {
+  console.error('[uncaughtException]', err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[unhandledRejection]', reason);
 });
 
 // Serve frontend static files in production (solo si el build existe en este contenedor)
